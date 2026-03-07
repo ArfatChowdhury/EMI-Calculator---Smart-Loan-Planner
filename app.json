@@ -1,17 +1,19 @@
 {
   "expo": {
-    "name": "EMI-Calculator-smart-loan-planner",
-    "slug": "EMI-Calculator-smart-loan-planner",
+    "name": "EMI Calculator — Loan Planner",
+    "slug": "emi-calculator-loan-planner",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "emicalculatorsmartloanplanner",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.naim.emicalculator"
     },
     "android": {
+      "package": "com.naim.emicalculator",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -38,7 +40,10 @@
             "backgroundColor": "#000000"
           }
         }
-      ]
+      ],
+      "react-native-google-mobile-ads",
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
