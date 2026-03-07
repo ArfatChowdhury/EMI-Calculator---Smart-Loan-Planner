@@ -1,39 +1,57 @@
-import { IconSymbol } from '@/components/ui/IconSymbol';
+import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import BannerAdComponent from '@/src/components/BannerAdComponent';
 import { AdUnits } from '@/src/constants/adUnits';
 import { useSettings } from '@/src/hooks/useSettings';
 import { Tabs } from 'expo-router';
 import React, { useEffect } from 'react';
 import { Platform, View } from 'react-native';
-import { AdEventType, BannerAd, BannerAdSize, InterstitialAd, TestIds } from 'react-native-google-mobile-ads';
 
-const interstitial = InterstitialAd.createForAdRequest(AdUnits.interstitial || TestIds.INTERSTITIAL, {
-  requestNonPersonalizedAdsOnly: true,
-});
+// Only initialize Mobile Ads in production
+if (!__DEV__) {
+  try {
+    const MobileAds = require('react-native-google-mobile-ads').default;
+    MobileAds().initialize();
+  } catch (e) {
+    console.warn('MobileAds initialization failed', e);
+  }
+}
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const { settings, updateSettings } = useSettings();
 
   useEffect(() => {
-    const showInterstitialOnLaunch = async () => {
-      const now = Date.now();
-      const lastShown = settings.lastInterstitialShown || 0;
-      const twentyFourHours = 24 * 60 * 60 * 1000;
+    // Only handle interstitial ads in production or if needed
+    if (__DEV__) return;
 
-      if (now - lastShown > twentyFourHours) {
-        const unsubscribe = interstitial.addAdEventListener(AdEventType.LOADED, () => {
-          interstitial.show();
-          updateSettings({ lastInterstitialShown: now });
-        });
+    try {
+      const { InterstitialAd, AdEventType, TestIds } = require('react-native-google-mobile-ads');
+      const interstitial = InterstitialAd.createForAdRequest(AdUnits.interstitial || TestIds.INTERSTITIAL, {
+        requestNonPersonalizedAdsOnly: true,
+      });
 
-        interstitial.load();
-        return unsubscribe;
-      }
-    };
+      const showInterstitialOnLaunch = async () => {
+        const now = Date.now();
+        const lastShown = settings.lastInterstitialShown || 0;
+        const twentyFourHours = 24 * 60 * 60 * 1000;
 
-    showInterstitialOnLaunch();
+        if (now - lastShown > twentyFourHours) {
+          const unsubscribe = interstitial.addAdEventListener(AdEventType.LOADED, () => {
+            interstitial.show();
+            updateSettings({ lastInterstitialShown: now });
+          });
+
+          interstitial.load();
+          return unsubscribe;
+        }
+      };
+
+      showInterstitialOnLaunch();
+    } catch (e) {
+      console.warn('Interstitial logic failed', e);
+    }
   }, [settings.lastInterstitialShown]);
 
   return (
@@ -50,7 +68,7 @@ export default function TabLayout() {
           },
         }}>
         <Tabs.Screen
-          name="index"
+          name="calculator"
           options={{
             title: 'Calculator',
             tabBarIcon: ({ color }) => <IconSymbol size={28} name="calculator.fill" color={color} />,
@@ -85,13 +103,7 @@ export default function TabLayout() {
         backgroundColor: Colors.background,
         paddingBottom: Platform.OS === 'ios' ? 20 : 0
       }}>
-        <BannerAd
-          unitId={AdUnits.banner || TestIds.BANNER}
-          size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
-          requestOptions={{
-            requestNonPersonalizedAdsOnly: true,
-          }}
-        />
+        <BannerAdComponent />
       </View>
     </View>
   );
