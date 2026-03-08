@@ -1,5 +1,5 @@
 ================================================================
-  AI AGENT MASTER PROMPT — EMI / LOAN CALCULATOR APP
+  AI AGENT MASTER PROMPT — EMI APP
   Platform  : React Native (Expo Managed Workflow)
   Build Time : 1-2 hours
   Target     : Google Play Store (South Asia + Global)
@@ -24,7 +24,7 @@ PACKAGES TO INSTALL:
   APP OVERVIEW
 ================================================================
 
-  Name        : EMI Calculator — Loan Planner
+  Name        : EMI
   Tagline     : Plan your loans. Own your finances.
   Theme       : Dark mode default (like the expense tracker)
                 Primary color  : #00C853 (green)
@@ -347,7 +347,7 @@ PACKAGES TO INSTALL:
   PLAYSTORE LISTING DETAILS
 ================================================================
 
-  App Name      : EMI Calculator — Loan Planner
+  App Name      : EMI
   Short Desc    : Calculate EMI, compare loans & plan prepayments
   Category      : Finance
   Tags          : emi calculator, loan calculator, home loan,

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "EMI Calculator — Loan Planner",
-    "slug": "emi-calculator-loan-planner",
+    "name": "EMI",
+    "slug": "emi",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
