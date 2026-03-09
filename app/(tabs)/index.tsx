@@ -1,7 +1,9 @@
-import { Colors } from '@/constants/Colors';
+import { Colors, SHADOW } from '@/constants/Colors';
+import { Currencies } from '@/constants/Currencies';
 import DonutChart from '@/src/components/DonutChart';
 import SliderInput from '@/src/components/SliderInput';
-import { useLoans } from '@/src/hooks/useLoans';
+import { useLoanContext } from '@/src/context/LoanContext';
+import { useSettings } from '@/src/hooks/useSettings';
 import { formatCurrency } from '@/src/utils/currencyFormatter';
 import {
     calculateFlatEMI,
@@ -11,21 +13,32 @@ import {
 } from '@/src/utils/emiCalculations';
 import { generateLoanPDF } from '@/src/utils/pdfGenerator';
 import * as Haptics from 'expo-haptics';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
     Alert,
+    LayoutChangeEvent,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
     View
 } from 'react-native';
+import Animated, {
+    FadeInUp,
+    useAnimatedStyle,
+    useSharedValue,
+    withRepeat,
+    withSequence,
+    withTiming
+} from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
 interface CalculationResults {
     emi: number;
     totalInterest: number;
     totalPayable: number;
+    endDate: string;
     savings: {
         newTenure: number;
         tenureSaved: number;
@@ -34,7 +47,16 @@ interface CalculationResults {
 }
 
 export default function CalculatorScreen() {
-    const { saveLoan } = useLoans();
+    const { settings } = useSettings();
+    const theme = Colors[(settings.theme || 'light') as keyof typeof Colors];
+
+    const { activeLoan, setActiveLoan, saveLoan } = useLoanContext();
+    const scrollRef = useRef<ScrollView>(null);
+    const resultsRef = useRef<number>(0);
+    const [chartWidth, setChartWidth] = useState(0);
+
+    const currencySymbol = Currencies.find(c => c.code === settings.currency)?.symbol || '$';
+
     const [amount, setAmount] = useState<number>(500000);
     const [rate, setRate] = useState<number>(9.5);
     const [tenure, setTenure] = useState<number>(60);
@@ -45,6 +67,44 @@ export default function CalculatorScreen() {
     const [extraMonthly, setExtraMonthly] = useState<number>(5000);
 
     const [results, setResults] = useState<CalculationResults | null>(null);
+
+    // Glow animation for EMI
+    const glowAnim = useSharedValue(1);
+
+    React.useEffect(() => {
+        if (results) {
+            glowAnim.value = withRepeat(
+                withSequence(
+                    withTiming(1.05, { duration: 1500 }),
+                    withTiming(1, { duration: 1500 })
+                ),
+                -1,
+                true
+            );
+        }
+    }, [results]);
+
+    const glowStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: glowAnim.value }],
+        textShadowRadius: withTiming(glowAnim.value * 8),
+    }));
+
+    // Handle editing loan
+    React.useEffect(() => {
+        if (activeLoan) {
+            setAmount(activeLoan.principal);
+            setRate(activeLoan.annualRate);
+            setTenure(activeLoan.tenureMonths);
+            setTenureType('months');
+            setLoanType((activeLoan.loanType as 'reducing' | 'flat') || 'reducing');
+
+            // Trigger calculation
+            setTimeout(handleCalculate, 300);
+
+            // Clear active loan so it doesn't overwrite changes on every render
+            setActiveLoan(null);
+        }
+    }, [activeLoan]);
 
     const handleCalculate = () => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -61,6 +121,11 @@ export default function CalculatorScreen() {
         const totalPayable = emi * actualTenureMonths;
         const totalInterest = totalPayable - amount;
 
+        // Calculate end date
+        const endDateObj = new Date();
+        endDateObj.setMonth(endDateObj.getMonth() + actualTenureMonths);
+        const endDate = endDateObj.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
         let savings = null;
         if (addPrepayment && loanType === 'reducing') {
             savings = calculatePrepaymentSavings(amount, rate, actualTenureMonths, extraMonthly);
@@ -70,8 +135,17 @@ export default function CalculatorScreen() {
             emi,
             totalInterest,
             totalPayable,
+            endDate,
             savings,
         });
+
+        // Auto-scroll to results smoothly
+        setTimeout(() => {
+            scrollRef.current?.scrollTo({
+                y: resultsRef.current,
+                animated: true,
+            });
+        }, 100);
     };
 
     const handleSave = async () => {
@@ -84,7 +158,7 @@ export default function CalculatorScreen() {
                 annualRate: rate,
                 tenureMonths: tenureType === 'years' ? tenure * 12 : tenure,
                 monthlyEMI: results.emi,
-                currency: 'BDT',
+                currency: settings.currency,
                 loanType: loanType,
             });
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -131,15 +205,90 @@ export default function CalculatorScreen() {
         setTenure(val);
     };
 
+    const renderDivider = () => (
+        <View style={[styles.divider, { backgroundColor: theme.border }]} />
+    );
+
+    const ResultCardDesign = () => (
+        <View style={StyleSheet.absoluteFill}>
+            <Svg height="100%" width="100%" preserveAspectRatio="none">
+                <Defs>
+                    <LinearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <Stop offset="0%" stopColor="#10B981" stopOpacity="1" />
+                        <Stop offset="100%" stopColor="#059669" stopOpacity="1" />
+                    </LinearGradient>
+                </Defs>
+                <Path d="M0,0 L1000,0 L1000,1000 L0,1000 Z" fill="url(#grad)" />
+                {/* Abstract Curves */}
+                <Path
+                    d="M-50,80 Q150,20 350,80 T750,20"
+                    fill="none"
+                    stroke="rgba(255,255,255,0.1)"
+                    strokeWidth="40"
+                />
+                <Path
+                    d="M-50,120 Q200,60 400,120 T850,60"
+                    fill="none"
+                    stroke="rgba(255,255,255,0.06)"
+                    strokeWidth="30"
+                />
+                <Path
+                    d="M-50,160 Q250,100 450,160 T950,100"
+                    fill="none"
+                    stroke="rgba(255,255,255,0.04)"
+                    strokeWidth="50"
+                />
+            </Svg>
+        </View>
+    );
+
+
     return (
-        <SafeAreaView style={styles.safeArea}>
-            <ScrollView contentContainerStyle={styles.container}>
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+            <ScrollView
+                ref={scrollRef}
+                contentContainerStyle={styles.container}
+                showsVerticalScrollIndicator={false}
+            >
                 <View style={styles.header}>
-                    <Text style={styles.title}>EMI Calculator</Text>
-                    <Text style={styles.subtitle}>Plan your loans easily</Text>
+                    <Text style={[styles.title, { color: theme.textPrimary }]}>EMI Calculator</Text>
+                    <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Plan your loans precisely</Text>
                 </View>
 
-                <View style={styles.card}>
+                {/* Premium Result Card */}
+                {results && (
+                    <Animated.View
+                        entering={FadeInUp.duration(800).springify()}
+                        style={[styles.resultBox, SHADOW.md]}
+                    >
+                        <ResultCardDesign />
+                        <View style={[styles.cardContent, { backgroundColor: 'rgba(255,255,255,0.08)' }]}>
+                            <Text style={styles.resultLabel}>Monthly EMI</Text>
+                            <Animated.Text style={[styles.resultAmount, glowStyle]}>
+                                {formatCurrency(results.emi, settings.currency)}
+                            </Animated.Text>
+
+                            <View style={styles.resultFooter}>
+                                <View style={styles.resultStat}>
+                                    <Text style={styles.resultStatLabel}>Total Interest</Text>
+                                    <Text style={styles.resultStatValue}>{formatCurrency(results.totalInterest, settings.currency)}</Text>
+                                </View>
+                                <View style={[styles.resultDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
+                                <View style={styles.resultStat}>
+                                    <Text style={styles.resultStatLabel}>Total Amount</Text>
+                                    <Text style={styles.resultStatValue}>{formatCurrency(results.totalPayable, settings.currency)}</Text>
+                                </View>
+                                <View style={[styles.resultDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
+                                <View style={styles.resultStat}>
+                                    <Text style={styles.resultStatLabel}>End Date</Text>
+                                    <Text style={styles.resultStatValue}>{results.endDate}</Text>
+                                </View>
+                            </View>
+                        </View>
+                    </Animated.View>
+                )}
+
+                <View style={[styles.inputContainer, { backgroundColor: theme.card, borderColor: theme.border }, SHADOW.sm]}>
                     <SliderInput
                         label="Loan Amount"
                         value={amount}
@@ -147,8 +296,10 @@ export default function CalculatorScreen() {
                         min={1000}
                         max={10000000}
                         step={1000}
-                        prefix="৳"
+                        prefix={currencySymbol}
                     />
+
+                    {renderDivider()}
 
                     <SliderInput
                         label="Interest Rate"
@@ -160,20 +311,22 @@ export default function CalculatorScreen() {
                         unit="%"
                     />
 
+                    {renderDivider()}
+
                     <View style={styles.tenureHeader}>
-                        <Text style={styles.label}>Loan Tenure</Text>
-                        <View style={styles.toggleGroup}>
+                        <Text style={[styles.label, { color: theme.textPrimary }]}>Loan Tenure</Text>
+                        <View style={[styles.toggleGroup, { backgroundColor: theme.background }]}>
                             <TouchableOpacity
-                                style={[styles.toggleBtn, tenureType === 'months' && styles.toggleBtnActive]}
+                                style={[styles.toggleBtn, tenureType === 'months' && { backgroundColor: theme.primary }]}
                                 onPress={() => toggleTenureType('months')}
                             >
-                                <Text style={[styles.toggleText, tenureType === 'months' && styles.toggleTextActive]}>Months</Text>
+                                <Text style={[styles.toggleText, { color: tenureType === 'months' ? theme.textOnPrimary : theme.textSecondary }]}>Months</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.toggleBtn, tenureType === 'years' && styles.toggleBtnActive]}
+                                style={[styles.toggleBtn, tenureType === 'years' && { backgroundColor: theme.primary }]}
                                 onPress={() => toggleTenureType('years')}
                             >
-                                <Text style={[styles.toggleText, tenureType === 'years' && styles.toggleTextActive]}>Years</Text>
+                                <Text style={[styles.toggleText, { color: tenureType === 'years' ? theme.textOnPrimary : theme.textSecondary }]}>Years</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -187,31 +340,33 @@ export default function CalculatorScreen() {
                         unit={tenureType === 'months' ? ' Mo' : ' Yr'}
                     />
 
+                    {renderDivider()}
+
                     <View style={styles.typeContainer}>
-                        <Text style={styles.label}>Loan Type</Text>
+                        <Text style={[styles.label, { color: theme.textPrimary }]}>Loan Type</Text>
                         <View style={styles.typeSelectors}>
                             <TouchableOpacity
-                                style={[styles.typeBtn, loanType === 'reducing' && styles.typeBtnActive]}
+                                style={[styles.typeBtn, { borderColor: theme.border }, loanType === 'reducing' && { borderColor: theme.primary, backgroundColor: `${theme.primary}10` }]}
                                 onPress={() => setLoanType('reducing')}
                             >
-                                <Text style={[styles.typeText, loanType === 'reducing' && styles.typeTextActive]}>Reducing Balance</Text>
+                                <Text style={[styles.typeText, { color: loanType === 'reducing' ? theme.primary : theme.textSecondary }]}>Reducing</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.typeBtn, loanType === 'flat' && styles.typeBtnActive]}
+                                style={[styles.typeBtn, { borderColor: theme.border }, loanType === 'flat' && { borderColor: theme.primary, backgroundColor: `${theme.primary}10` }]}
                                 onPress={() => setLoanType('flat')}
                             >
-                                <Text style={[styles.typeText, loanType === 'flat' && styles.typeTextActive]}>Flat Rate</Text>
+                                <Text style={[styles.typeText, { color: loanType === 'flat' ? theme.primary : theme.textSecondary }]}>Flat Rate</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
 
                     {loanType === 'reducing' && (
                         <TouchableOpacity
-                            style={styles.prepaymentToggle}
+                            style={[styles.prepaymentToggle, { backgroundColor: theme.background }]}
                             onPress={() => setAddPrepayment(!addPrepayment)}
                         >
-                            <Text style={styles.prepaymentLabel}>Add Monthly Prepayment</Text>
-                            <View style={[styles.toggleSwitch, addPrepayment && styles.toggleSwitchActive]}>
+                            <Text style={[styles.prepaymentLabel, { color: theme.textPrimary }]}>Add Monthly Prepayment</Text>
+                            <View style={[styles.toggleSwitch, { backgroundColor: theme.border }, addPrepayment && { backgroundColor: theme.primary }]}>
                                 <View style={[styles.toggleCircle, addPrepayment && styles.toggleCircleActive]} />
                             </View>
                         </TouchableOpacity>
@@ -219,73 +374,71 @@ export default function CalculatorScreen() {
 
                     {addPrepayment && loanType === 'reducing' && (
                         <SliderInput
-                            label="Extra Monthly Payment"
+                            label="Extra Payment"
                             value={extraMonthly}
                             onChange={setExtraMonthly}
                             min={500}
                             max={100000}
                             step={500}
-                            prefix="৳"
+                            prefix={currencySymbol}
                         />
                     )}
 
-                    <TouchableOpacity style={styles.calculateBtn} onPress={handleCalculate}>
+                    <TouchableOpacity
+                        style={[styles.calculateBtn, { backgroundColor: theme.primary }]}
+                        onPress={handleCalculate}
+                        activeOpacity={0.8}
+                    >
                         <Text style={styles.calculateBtnText}>Calculate EMI</Text>
                     </TouchableOpacity>
                 </View>
 
                 {results && (
-                    <View style={styles.resultsSection}>
-                        <View style={styles.resultCard}>
-                            <Text style={styles.resultLabel}>Monthly EMI</Text>
-                            <Text style={styles.emiValue}>{formatCurrency(results.emi)}</Text>
-                        </View>
-
+                    <Animated.View
+                        entering={FadeInUp.duration(600)}
+                        style={styles.resultsSection}
+                        onLayout={(e: LayoutChangeEvent) => { resultsRef.current = e.nativeEvent.layout.y; }}
+                    >
                         {results.savings && (
-                            <View style={[styles.resultCard, styles.savingsCard]}>
-                                <Text style={styles.savingsTitle}>Prepayment Savings</Text>
-                                <View style={styles.summaryRow}>
-                                    <View style={styles.summaryMiniCard}>
-                                        <Text style={styles.summaryLabel}>Interest Saved</Text>
-                                        <Text style={[styles.summaryValue, { color: Colors.primary }]}>
-                                            {formatCurrency(results.savings.interestSaved)}
-                                        </Text>
-                                    </View>
-                                    <View style={styles.summaryMiniCard}>
-                                        <Text style={styles.summaryLabel}>Tenure Saved</Text>
-                                        <Text style={[styles.summaryValue, { color: Colors.primary }]}>
-                                            {results.savings.tenureSaved} Months
-                                        </Text>
-                                    </View>
+                            <View style={[styles.savingsBanner, { backgroundColor: `${theme.income}15`, borderColor: theme.income }]}>
+                                <View style={styles.warningTextContent}>
+                                    <Text style={[styles.warningTitle, { color: theme.income }]}>Interest Saved</Text>
+                                    <Text style={[styles.warningDesc, { color: theme.textSecondary }]}>
+                                        Save {formatCurrency(results.savings.interestSaved, settings.currency)} and close {results.savings.tenureSaved} months early!
+                                    </Text>
                                 </View>
-                                <Text style={styles.savingsText}>
-                                    Your loan will close in {results.savings.newTenure} months.
-                                </Text>
                             </View>
                         )}
 
-                        <View style={styles.summaryRow}>
-                            <View style={styles.summaryMiniCard}>
-                                <Text style={styles.summaryLabel}>Total Interest</Text>
-                                <Text style={styles.summaryValue}>{formatCurrency(results.totalInterest)}</Text>
-                            </View>
-                            <View style={styles.summaryMiniCard}>
-                                <Text style={styles.summaryLabel}>Total Amount</Text>
-                                <Text style={styles.summaryValue}>{formatCurrency(results.totalPayable)}</Text>
-                            </View>
+                        <View
+                            style={[styles.chartBox, { backgroundColor: theme.card, borderColor: theme.border }, SHADOW.sm]}
+                            onLayout={(e) => setChartWidth(e.nativeEvent.layout.width)}
+                        >
+                            {chartWidth > 0 && (
+                                <DonutChart
+                                    principal={amount}
+                                    interest={results.totalInterest}
+                                    currency={settings.currency}
+                                    width={chartWidth}
+                                />
+                            )}
                         </View>
-
-                        <DonutChart principal={amount} interest={results.totalInterest} />
 
                         <View style={styles.actionButtons}>
-                            <TouchableOpacity style={styles.actionBtn} onPress={handleSave}>
-                                <Text style={styles.actionBtnText}>Save Loan</Text>
+                            <TouchableOpacity
+                                style={[styles.actionBtn, { borderColor: theme.primary, borderWidth: 2 }]}
+                                onPress={handleSave}
+                            >
+                                <Text style={[styles.actionBtnText, { color: theme.primary }]}>Save Loan</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.actionBtn} onPress={handleExportPDF}>
-                                <Text style={styles.actionBtnText}>Export PDF</Text>
+                            <TouchableOpacity
+                                style={[styles.actionBtn, { backgroundColor: theme.primary }]}
+                                onPress={handleExportPDF}
+                            >
+                                <Text style={[styles.actionBtnText, { color: '#FFFFFF' }]}>PDF Report</Text>
                             </TouchableOpacity>
                         </View>
-                    </View>
+                    </Animated.View>
                 )}
             </ScrollView>
         </SafeAreaView>
@@ -295,219 +448,216 @@ export default function CalculatorScreen() {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: Colors.background,
     },
     container: {
         padding: 20,
+        paddingBottom: 40,
     },
     header: {
-        marginBottom: 20,
+        marginBottom: 24,
     },
     title: {
         fontSize: 28,
-        fontWeight: 'bold',
-        color: Colors.textPrimary,
+        fontWeight: '800',
     },
     subtitle: {
         fontSize: 16,
-        color: Colors.textSecondary,
+        marginTop: 4,
+        fontWeight: '600',
+    },
+    resultBox: {
+        borderRadius: 24,
+        marginBottom: 20,
+        overflow: 'hidden',
+        backgroundColor: '#10B981', // Fallback Emerald
+        padding: 24,
+    },
+    cardContent: {
+        alignItems: 'center',
+    },
+    resultLabel: {
+        color: 'rgba(255,255,255,0.9)',
+        fontSize: 14,
+        fontWeight: '800',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        textShadowColor: 'rgba(0, 0, 0, 0.3)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 3,
+    },
+    resultAmount: {
+        color: '#FFFFFF',
+        fontSize: 42,
+        fontWeight: '900',
+        marginTop: 4,
+        textShadowColor: 'rgba(0, 0, 0, 0.3)',
+        textShadowOffset: { width: 0, height: 2 },
+        textShadowRadius: 4,
+    },
+    resultFooter: {
+        flexDirection: 'row',
+        marginTop: 20,
+        paddingTop: 16,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(255,255,255,0.2)',
+        width: '100%',
+    },
+    resultStat: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    resultStatLabel: {
+        color: 'rgba(255,255,255,0.6)',
+        fontSize: 10,
+        fontWeight: '700',
+        textTransform: 'uppercase',
+    },
+    resultStatValue: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontWeight: '800',
         marginTop: 4,
     },
-    card: {
-        backgroundColor: Colors.card,
-        borderRadius: 16,
+    resultDivider: {
+        width: 1,
+        height: '100%',
+    },
+    inputContainer: {
+        borderRadius: 24,
         padding: 20,
         borderWidth: 1,
-        borderColor: Colors.border,
+    },
+    divider: {
+        height: 1,
+        width: '100%',
+        marginVertical: 16,
+        opacity: 0.3,
     },
     label: {
         fontSize: 16,
-        color: Colors.textPrimary,
-        fontWeight: '600',
-        marginBottom: 8,
+        fontWeight: '700',
     },
     tenureHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 12,
+        marginBottom: 8,
     },
     toggleGroup: {
         flexDirection: 'row',
-        backgroundColor: Colors.background,
-        borderRadius: 8,
+        borderRadius: 12,
         padding: 4,
     },
     toggleBtn: {
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 6,
-    },
-    toggleBtnActive: {
-        backgroundColor: Colors.primary,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 10,
     },
     toggleText: {
-        color: Colors.textSecondary,
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    toggleTextActive: {
-        color: Colors.white,
+        fontSize: 13,
+        fontWeight: '800',
     },
     typeContainer: {
-        marginTop: 10,
+        marginTop: 12,
         marginBottom: 24,
     },
     typeSelectors: {
         flexDirection: 'row',
         gap: 12,
+        marginTop: 12,
     },
     typeBtn: {
         flex: 1,
         paddingVertical: 12,
-        borderRadius: 8,
+        borderRadius: 12,
         borderWidth: 1,
-        borderColor: Colors.border,
         alignItems: 'center',
-    },
-    typeBtnActive: {
-        borderColor: Colors.primary,
-        backgroundColor: 'rgba(0, 200, 83, 0.1)',
     },
     typeText: {
-        color: Colors.textSecondary,
-        fontWeight: '600',
-    },
-    typeTextActive: {
-        color: Colors.primary,
-    },
-    calculateBtn: {
-        backgroundColor: Colors.primary,
-        paddingVertical: 16,
-        borderRadius: 12,
-        alignItems: 'center',
-        shadowColor: Colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 5,
-    },
-    calculateBtnText: {
-        color: Colors.white,
-        fontSize: 18,
-        fontWeight: 'bold',
+        fontWeight: '700',
     },
     prepaymentToggle: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
         marginBottom: 20,
-        backgroundColor: 'rgba(255, 255, 255, 0.05)',
-        padding: 12,
-        borderRadius: 8,
+        padding: 16,
+        borderRadius: 16,
     },
     prepaymentLabel: {
-        color: Colors.textPrimary,
         fontSize: 14,
-        fontWeight: '600',
+        fontWeight: '700',
     },
     toggleSwitch: {
         width: 44,
         height: 24,
         borderRadius: 12,
-        backgroundColor: Colors.border,
         padding: 2,
-    },
-    toggleSwitchActive: {
-        backgroundColor: Colors.primary,
     },
     toggleCircle: {
         width: 20,
         height: 20,
         borderRadius: 10,
-        backgroundColor: Colors.white,
+        backgroundColor: '#FFFFFF',
     },
     toggleCircleActive: {
         transform: [{ translateX: 20 }],
+    },
+    calculateBtn: {
+        paddingVertical: 18,
+        borderRadius: 16,
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    calculateBtnText: {
+        fontSize: 18,
+        fontWeight: '800',
+        color: '#FFFFFF',
     },
     resultsSection: {
         marginTop: 24,
         marginBottom: 40,
     },
-    resultCard: {
-        backgroundColor: Colors.card,
-        borderRadius: 16,
-        padding: 24,
-        alignItems: 'center',
-        marginBottom: 16,
-        borderWidth: 1,
-        borderColor: Colors.border,
-    },
-    savingsCard: {
-        borderColor: Colors.primary,
-        backgroundColor: 'rgba(0, 200, 83, 0.05)',
-    },
-    savingsTitle: {
-        color: Colors.primary,
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 16,
-    },
-    savingsText: {
-        color: Colors.textSecondary,
-        fontSize: 12,
-        marginTop: 12,
-        fontStyle: 'italic',
-    },
-    resultLabel: {
-        color: Colors.textSecondary,
-        fontSize: 16,
-        marginBottom: 8,
-    },
-    emiValue: {
-        color: Colors.primary,
-        fontSize: 36,
-        fontWeight: 'bold',
-    },
-    summaryRow: {
-        flexDirection: 'row',
-        gap: 12,
-        marginBottom: 16,
-    },
-    summaryMiniCard: {
-        flex: 1,
-        backgroundColor: Colors.card,
-        borderRadius: 12,
+    savingsBanner: {
+        borderRadius: 20,
         padding: 16,
-        alignItems: 'center',
+        marginBottom: 20,
         borderWidth: 1,
-        borderColor: Colors.border,
     },
-    summaryLabel: {
-        color: Colors.textSecondary,
-        fontSize: 12,
-        marginBottom: 4,
+    warningTextContent: {
+        flex: 1,
     },
-    summaryValue: {
-        color: Colors.textPrimary,
-        fontSize: 16,
-        fontWeight: 'bold',
+    warningTitle: {
+        fontSize: 15,
+        fontWeight: '800',
+    },
+    warningDesc: {
+        fontSize: 13,
+        fontWeight: '600',
+        marginTop: 4,
+    },
+    chartBox: {
+        borderRadius: 24,
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderWidth: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     actionButtons: {
         flexDirection: 'row',
         gap: 12,
-        marginTop: 16,
+        marginTop: 24,
     },
     actionBtn: {
         flex: 1,
-        paddingVertical: 12,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: Colors.primary,
+        paddingVertical: 16,
+        borderRadius: 16,
         alignItems: 'center',
+        justifyContent: 'center',
     },
     actionBtnText: {
-        color: Colors.primary,
-        fontWeight: '600',
+        fontWeight: '800',
+        fontSize: 16,
     },
 });

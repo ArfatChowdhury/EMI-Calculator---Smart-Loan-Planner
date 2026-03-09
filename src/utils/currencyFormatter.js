@@ -1,30 +1,15 @@
 /**
  * Currency Formatter
  */
+import { Currencies } from '@/constants/Currencies';
 
-export const formatCurrency = (amount, currencyCode = 'BDT') => {
+export const formatCurrency = (amount, currencyCode = 'USD') => {
     if (amount === undefined || amount === null) return '';
 
-    const locales = {
-        BDT: 'en-IN', // Indian locale uses lakh/crore system which is same for BDT
-        INR: 'en-IN',
-        USD: 'en-US',
-        EUR: 'de-DE',
-        GBP: 'en-GB',
-    };
+    const currencyObj = Currencies.find(c => c.code === currencyCode) || Currencies[0];
+    const locale = currencyObj.locale;
+    const symbol = currencyObj.symbol;
 
-    const symbols = {
-        BDT: '৳',
-        INR: '₹',
-        USD: '$',
-        EUR: '€',
-        GBP: '£',
-    };
-
-    const locale = locales[currencyCode] || 'en-US';
-    const symbol = symbols[currencyCode] || '';
-
-    // For BDT we want the symbol prefix
     try {
         const formatter = new Intl.NumberFormat(locale, {
             minimumFractionDigits: 0,
@@ -33,7 +18,8 @@ export const formatCurrency = (amount, currencyCode = 'BDT') => {
 
         let formatted = formatter.format(amount);
 
-        // Special handling for BDT to ensure it uses the symbol correctly if Intl doesn't provide it
+        // We want to force the symbol because sometimes Intl.NumberFormat doesn't place it where we want
+        // or uses the code instead of the symbol depending on the locale.
         return `${symbol}${formatted}`;
     } catch (e) {
         return `${symbol}${amount.toLocaleString()}`;

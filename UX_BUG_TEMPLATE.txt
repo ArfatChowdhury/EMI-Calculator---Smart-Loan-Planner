@@ -1,0 +1,248 @@
+================================================================
+  UX BUG REPORT TEMPLATE — FOR AI AGENT
+  Use this template for EVERY UI/UX fix request
+  Copy, fill in the blanks, paste to your AI agent
+================================================================
+
+HOW TO USE:
+-----------
+Copy the template below, fill in each field,
+paste the whole thing to your AI agent.
+The more detail you give, the better the fix.
+Never say "fix the ux" — always use this template.
+
+
+================================================================
+  TEMPLATE — COPY FROM HERE
+================================================================
+
+UX BUG REPORT
+=============
+APP: [EMI Calculator / Expense Tracker / App Name]
+SCREEN: [exact screen name e.g. calculator.tsx / HomeScreen]
+ELEMENT: [what element has the problem e.g. button, card, list]
+
+CURRENT BEHAVIOR:
+[Describe exactly what happens now]
+[Be specific — "button is green" not "button looks wrong"]
+
+EXPECTED BEHAVIOR:
+[Describe exactly what should happen]
+[Be specific — "button should be outlined green, not filled"]
+
+STEPS TO REPRODUCE:
+1. [First step]
+2. [Second step]
+3. [What you see vs what you expect]
+
+DEVICE/OS:
+[Android / iOS, version if known]
+
+REFERENCE:
+[Optional — "like WhatsApp", "like Revolut app", 
+ "like the expense tracker home screen card"]
+
+PRIORITY:
+[ ] Critical — app crashes or feature broken
+[ ] High — bad UX, user will notice immediately
+[ ] Medium — minor annoyance
+[ ] Low — cosmetic only
+
+================================================================
+  TEMPLATE — END HERE
+================================================================
+
+
+================================================================
+  REAL EXAMPLES — USE AS REFERENCE
+================================================================
+
+EXAMPLE 1 — Auto scroll problem:
+---------------------------------
+UX BUG REPORT
+=============
+APP: EMI Calculator
+SCREEN: calculator.tsx
+ELEMENT: ScrollView + Results Section
+
+CURRENT BEHAVIOR:
+When user taps "Calculate EMI" button, the calculation
+runs and results appear below the form. But the screen
+stays scrolled at the top and the user cannot see that
+results have appeared. User has to manually scroll down.
+
+EXPECTED BEHAVIOR:
+1. After Calculate EMI is tapped, screen should
+   automatically scroll down smoothly to the results card
+2. Monthly EMI value should have a brief green highlight
+   animation (1 second) to draw the user's eye
+3. A subtle haptic feedback on calculation complete
+
+STEPS TO REPRODUCE:
+1. Open Calculator screen
+2. Set any loan values
+3. Tap "Calculate EMI"
+4. Notice screen stays at top — results not visible
+
+DEVICE/OS: Android
+
+REFERENCE: Like Google Calculator showing result instantly
+           and prominently
+
+PRIORITY: [X] High — user will notice immediately
+
+
+EXAMPLE 2 — Color inconsistency:
+----------------------------------
+UX BUG REPORT
+=============
+APP: EMI Calculator
+SCREEN: calculator.tsx
+ELEMENT: Pie chart DonutChart component legend text
+
+CURRENT BEHAVIOR:
+The legend text in the DonutChart component shows
+"Principal" and "Interest" labels but the text is
+black colored, making it invisible on the dark
+background card.
+
+EXPECTED BEHAVIOR:
+Legend text color should be #888888 (grey) for labels
+and #FFFFFF (white) for values so they are readable
+on the dark #1A1A1A card background.
+
+STEPS TO REPRODUCE:
+1. Open Calculator screen
+2. Enter any loan values and tap Calculate EMI
+3. Scroll down to pie chart
+4. Notice legend text is invisible
+
+DEVICE/OS: Android
+
+REFERENCE: Same style as expense tracker transaction
+           card labels — grey label, white value
+
+PRIORITY: [X] High — core feature is unreadable
+
+
+EXAMPLE 3 — Wrong default value:
+----------------------------------
+UX BUG REPORT
+=============
+APP: EMI Calculator
+SCREEN: calculator.tsx and all screens
+ELEMENT: Currency symbol throughout app
+
+CURRENT BEHAVIOR:
+App shows $ (USD) as default currency everywhere —
+in the result card, pie chart legend, loan cards,
+and all formatted amounts.
+
+EXPECTED BEHAVIOR:
+Default currency should be ৳ (BDT - Bangladeshi Taka)
+since primary target market is Bangladesh/South Asia.
+User can change currency in Settings screen.
+The change should reflect immediately across all screens.
+
+STEPS TO REPRODUCE:
+1. Open app fresh
+2. Notice $ symbol everywhere instead of ৳
+
+DEVICE/OS: Android
+
+REFERENCE: Expense tracker uses ৳ by default
+
+PRIORITY: [X] Medium — wrong for target market
+
+
+EXAMPLE 4 — Missing animation:
+--------------------------------
+UX BUG REPORT
+=============
+APP: EMI Calculator
+SCREEN: calculator.tsx
+ELEMENT: Results section cards
+
+CURRENT BEHAVIOR:
+When Calculate EMI is tapped, results section
+appears instantly with no animation. Feels abrupt
+and cheap.
+
+EXPECTED BEHAVIOR:
+Results cards should animate in with a fade + slide up
+effect. Each card should appear with a small stagger
+delay (100ms between cards) so it feels smooth and
+premium. Like a fintech app.
+
+STEPS TO REPRODUCE:
+1. Open Calculator screen
+2. Tap Calculate EMI
+3. Results appear instantly — no animation
+
+DEVICE/OS: Android
+
+REFERENCE: Like Revolut app showing transaction
+           details — smooth fade in from bottom
+
+PRIORITY: [X] Medium — polish and premium feel
+
+CODE HINT FOR AGENT:
+  import Animated, { 
+    FadeInDown, 
+    SlideInUp 
+  } from 'react-native-reanimated';
+  
+  <Animated.View entering={FadeInDown.delay(100).duration(400)}>
+    <ResultCard />
+  </Animated.View>
+
+
+================================================================
+  COMMON UX PATTERNS TO REFERENCE
+================================================================
+
+When describing expected behavior, use these references:
+
+FINTECH APPS (professional, trust):
+  "Like Revolut" — clean, minimal, premium dark
+  "Like Robinhood" — green accent, financial data
+  "Like the expense tracker home screen" — your own app!
+
+FEEDBACK PATTERNS:
+  "Haptic feedback on button press" — light tap feel
+  "Success haptic after save" — satisfying confirmation
+  "Error shake animation on invalid input" — user knows mistake
+
+ANIMATION PATTERNS:
+  "Fade in from bottom" — FadeInDown from reanimated
+  "Slide up sheet" — bottom sheet appearing
+  "Number roll animation" — counting up to final value
+  "Pulse on highlight" — brief glow on important value
+
+LOADING PATTERNS:
+  "Skeleton loading" — grey placeholder while loading
+  "Spinner in button" — button shows loading state
+  "Progress bar" — shows completion percentage
+
+
+================================================================
+  QUICK REFERENCE — PROBLEM TYPES
+================================================================
+
+PROBLEM TYPE        | KEY PHRASE TO USE IN TEMPLATE
+──────────────────────────────────────────────────────────────
+Can't find feature  | "user cannot see / user doesn't know"
+Wrong position      | "element is at X, should be at Y"
+Missing feedback    | "no haptic/animation/sound when..."
+Wrong color         | "color is X, should be Y (#hexcode)"
+Wrong size          | "too small/large, should be Xpx"
+Broken on scroll    | "when scrolling, X happens instead of Y"
+Crash / Error       | "app crashes when user does X"
+Slow / Laggy        | "X takes more than 1 second, should be instant"
+Missing feature     | "there is no X, there should be X"
+Wrong default       | "default value is X, should be Y"
+
+
+================================================================
+  END OF UX BUG TEMPLATE
+================================================================

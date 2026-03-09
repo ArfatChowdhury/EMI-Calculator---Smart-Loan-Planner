@@ -1,15 +1,19 @@
 import { Colors } from '@/constants/Colors';
 import LoanCard from '@/src/components/LoanCard';
-import { useLoans } from '@/src/hooks/useLoans';
+import { useLoanContext } from '@/src/context/LoanContext';
+import { useSettings } from '@/src/hooks/useSettings';
 import { formatCurrency } from '@/src/utils/currencyFormatter';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import {
     ActivityIndicator,
+    Alert,
     FlatList,
     StyleSheet,
     Text,
     View
 } from 'react-native';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface Loan {
@@ -24,52 +28,81 @@ interface Loan {
 }
 
 export default function MyLoansScreen() {
-    const { loans, loading } = useLoans();
+    const { settings } = useSettings();
+    const theme = Colors[(settings.theme || 'light') as keyof typeof Colors];
+    const { loans, loading, deleteLoan, setActiveLoan } = useLoanContext();
+    const router = useRouter();
 
     const totalOutstanding = (loans as Loan[]).reduce((acc, loan) => acc + loan.principal, 0);
 
+    const handleEdit = (loan: Loan) => {
+        setActiveLoan(loan);
+        router.push('/(tabs)');
+    };
+
+    const handleDelete = (id: string) => {
+        Alert.alert(
+            'Delete Loan',
+            'Are you sure you want to delete this loan?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Delete', style: 'destructive', onPress: () => deleteLoan(id) }
+            ]
+        );
+    };
+
     const renderEmptyState = () => (
         <View style={styles.emptyContainer}>
-            <Text style={styles.emptyTitle}>No loans saved yet</Text>
-            <Text style={styles.emptySubtitle}>Calculate and save your first loan to track it here.</Text>
+            <View style={[styles.emptyIconBox, { backgroundColor: theme.gray100 }]}>
+                <Text style={{ fontSize: 40 }}>📁</Text>
+            </View>
+            <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>No loans saved yet</Text>
+            <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>Calculate and save your first loan to track it here.</Text>
         </View>
     );
 
     const renderHeader = () => (
-        <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Total Outstanding</Text>
-            <Text style={styles.summaryValue}>{formatCurrency(totalOutstanding)}</Text>
-            <View style={styles.loanCountBadge}>
-                <Text style={styles.loanCountText}>{loans.length} Active Loans</Text>
+        <Animated.View entering={FadeInUp.duration(600)} style={styles.summarySection}>
+            <View style={[styles.summaryCard, { backgroundColor: theme.primary }]}>
+                <Text style={styles.summaryLabel}>Total Outstanding</Text>
+                <Text style={styles.summaryValue}>{formatCurrency(totalOutstanding, settings.currency)}</Text>
+                <View style={styles.loanCountBadge}>
+                    <Text style={styles.loanCountText}>{loans.length} Active Loans</Text>
+                </View>
             </View>
-        </View>
+        </Animated.View>
     );
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.safeArea}>
+            <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color={Colors.primary} />
+                    <ActivityIndicator size="large" color={theme.primary} />
                 </View>
             </SafeAreaView>
         );
     }
 
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
             <View style={styles.container}>
-                <Text style={styles.title}>My Loans</Text>
-
-                {loans.length > 0 && renderHeader()}
+                <Text style={[styles.title, { color: theme.textPrimary }]}>My Loans</Text>
 
                 <FlatList
                     data={loans as Loan[]}
                     keyExtractor={(item) => item.id}
+                    ListHeaderComponent={loans.length > 0 ? renderHeader : null}
                     renderItem={({ item }) => (
-                        <LoanCard loan={item} onPress={() => { }} />
+                        <LoanCard
+                            loan={item}
+                            onPress={() => handleEdit(item)}
+                            onEdit={() => handleEdit(item)}
+                            onDelete={() => handleDelete(item.id)}
+                        />
                     )}
                     contentContainerStyle={styles.listContent}
                     ListEmptyComponent={renderEmptyState}
+                    showsVerticalScrollIndicator={false}
                 />
             </View>
         </SafeAreaView>
@@ -79,11 +112,11 @@ export default function MyLoansScreen() {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: Colors.background,
     },
     container: {
         flex: 1,
-        padding: 20,
+        paddingHorizontal: 20,
+        paddingTop: 10,
     },
     loadingContainer: {
         flex: 1,
@@ -92,64 +125,72 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 28,
-        fontWeight: 'bold',
-        color: Colors.textPrimary,
+        fontWeight: '800',
         marginBottom: 20,
     },
-    summaryCard: {
-        backgroundColor: Colors.primary,
-        borderRadius: 16,
-        padding: 20,
+    summarySection: {
         marginBottom: 24,
-        shadowColor: Colors.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 5,
+    },
+    summaryCard: {
+        borderRadius: 32,
+        padding: 28,
+        overflow: 'hidden',
+        alignItems: 'center',
+        elevation: 6,
+    },
+    cardOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.7)',
     },
     summaryLabel: {
-        color: 'rgba(255, 255, 255, 0.8)',
+        color: 'rgba(255, 255, 255, 0.6)',
         fontSize: 14,
-        fontWeight: '600',
+        fontWeight: '700',
     },
     summaryValue: {
-        color: Colors.white,
-        fontSize: 28,
-        fontWeight: 'bold',
-        marginVertical: 4,
+        color: '#FFFFFF',
+        fontSize: 36,
+        fontWeight: '900',
+        marginVertical: 8,
     },
     loanCountBadge: {
-        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-        alignSelf: 'flex-start',
-        paddingHorizontal: 12,
-        paddingVertical: 4,
+        backgroundColor: 'rgba(255, 255, 255, 0.15)',
+        paddingHorizontal: 16,
+        paddingVertical: 6,
         borderRadius: 12,
         marginTop: 8,
     },
     loanCountText: {
-        color: Colors.white,
+        color: '#FFFFFF',
         fontSize: 12,
-        fontWeight: '600',
+        fontWeight: '800',
     },
     listContent: {
-        paddingBottom: 20,
+        paddingBottom: 40,
     },
     emptyContainer: {
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: 100,
+        marginTop: 60,
+    },
+    emptyIconBox: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 20,
     },
     emptyTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: Colors.textPrimary,
+        fontSize: 20,
+        fontWeight: '800',
         marginBottom: 8,
     },
     emptySubtitle: {
-        fontSize: 14,
-        color: Colors.textSecondary,
+        fontSize: 15,
         textAlign: 'center',
         paddingHorizontal: 40,
+        fontWeight: '600',
     },
 });

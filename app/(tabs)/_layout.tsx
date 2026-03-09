@@ -1,6 +1,5 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import BannerAdComponent from '@/src/components/BannerAdComponent';
 import { AdUnits } from '@/src/constants/adUnits';
 import { useSettings } from '@/src/hooks/useSettings';
@@ -19,8 +18,8 @@ if (!__DEV__) {
 }
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
   const { settings, updateSettings } = useSettings();
+  const theme = Colors[(settings.theme || 'light') as keyof typeof Colors];
 
   useEffect(() => {
     // Only handle interstitial ads in production or if needed
@@ -55,14 +54,15 @@ export default function TabLayout() {
   }, [settings.lastInterstitialShown]);
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: theme.background }}>
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: Colors.primary,
+          tabBarActiveTintColor: theme.primary,
+          tabBarInactiveTintColor: theme.textSecondary,
           headerShown: false,
           tabBarStyle: {
-            backgroundColor: Colors.card,
-            borderTopColor: Colors.border,
+            backgroundColor: theme.card,
+            borderTopColor: theme.border,
             paddingBottom: Platform.OS === 'ios' ? 20 : 0,
             height: Platform.OS === 'ios' ? 88 : 60,
           },
@@ -100,7 +100,7 @@ export default function TabLayout() {
       <View style={{
         width: '100%',
         alignItems: 'center',
-        backgroundColor: Colors.background,
+        backgroundColor: theme.background,
         paddingBottom: Platform.OS === 'ios' ? 20 : 0
       }}>
         <BannerAdComponent />

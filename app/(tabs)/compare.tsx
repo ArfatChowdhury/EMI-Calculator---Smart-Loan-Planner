@@ -1,7 +1,10 @@
-import { Colors } from '@/constants/Colors';
+import { Colors, SHADOW } from '@/constants/Colors';
+import { Currencies } from '@/constants/Currencies';
 import SliderInput from '@/src/components/SliderInput';
+import { useSettings } from '@/src/hooks/useSettings';
 import { formatCurrency } from '@/src/utils/currencyFormatter';
 import { calculateReducingEMI } from '@/src/utils/emiCalculations';
+import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useState } from 'react';
 import {
@@ -9,14 +12,19 @@ import {
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CompareScreen() {
+    const { settings } = useSettings();
+    const theme = Colors[(settings.theme || 'light') as keyof typeof Colors];
     const [loan1, setLoan1] = useState({ amount: 500000, rate: 9.5, tenure: 60 });
     const [loan2, setLoan2] = useState({ amount: 500000, rate: 10.5, tenure: 60 });
     const [results, setResults] = useState<any>(null);
+
+    const currencySymbol = Currencies.find(c => c.code === settings.currency)?.symbol || '$';
 
     const handleCompare = () => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -40,55 +48,64 @@ export default function CompareScreen() {
         });
     };
 
-    const renderComparisonRow = (label: string, val1: any, val2: any, isCurrency = true) => {
+    const renderComparisonCard = (label: string, val1: number, val2: number, isCurrency = true) => {
         const diff = val1 - val2;
         const isLoan1Better = diff < 0;
 
         return (
-            <View style={styles.compareRow}>
-                <Text style={styles.compareLabel}>{label}</Text>
+            <View style={[styles.compareCard, { backgroundColor: theme.card, borderColor: theme.border }, SHADOW.sm]}>
+                <Text style={[styles.compareLabel, { color: theme.textSecondary }]}>{label}</Text>
                 <View style={styles.compareValues}>
-                    <View style={[styles.valCard, isLoan1Better && styles.betterCard]}>
-                        <Text style={[styles.valText, isLoan1Better && styles.betterText]}>
-                            {isCurrency ? formatCurrency(val1) : val1}
+                    <View style={[styles.valBox, { backgroundColor: theme.background }, isLoan1Better && { backgroundColor: `${theme.primary}10`, borderColor: theme.primary, borderWidth: 1 }]}>
+                        <Text style={[styles.valText, { color: theme.textPrimary }, isLoan1Better && { color: theme.primary }]}>
+                            {isCurrency ? formatCurrency(val1, settings.currency) : val1}
                         </Text>
+                        <Text style={[styles.loanTag, { color: theme.textSecondary }]}>LOAN 1</Text>
                     </View>
-                    <View style={[styles.valCard, !isLoan1Better && diff !== 0 && styles.betterCard]}>
-                        <Text style={[styles.valText, !isLoan1Better && diff !== 0 && styles.betterText]}>
-                            {isCurrency ? formatCurrency(val2) : val2}
+                    <View style={[styles.valBox, { backgroundColor: theme.background }, !isLoan1Better && diff !== 0 && { backgroundColor: `${theme.primary}10`, borderColor: theme.primary, borderWidth: 1 }]}>
+                        <Text style={[styles.valText, { color: theme.textPrimary }, !isLoan1Better && diff !== 0 && { color: theme.primary }]}>
+                            {isCurrency ? formatCurrency(val2, settings.currency) : val2}
                         </Text>
+                        <Text style={[styles.loanTag, { color: theme.textSecondary }]}>LOAN 2</Text>
                     </View>
                 </View>
                 {diff !== 0 && (
-                    <Text style={[styles.diffText, diff < 0 ? styles.positiveDiff : styles.negativeDiff]}>
-                        Difference: {formatCurrency(Math.abs(diff))}
-                    </Text>
+                    <View style={[styles.diffBanner, { backgroundColor: diff < 0 ? `${theme.income}10` : `${theme.expense}10` }]}>
+                        <Ionicons name={diff < 0 ? "arrow-down-circle" : "arrow-up-circle"} size={16} color={diff < 0 ? theme.income : theme.expense} />
+                        <Text style={[styles.diffText, { color: diff < 0 ? theme.income : theme.expense }]}>
+                            Difference: {formatCurrency(Math.abs(diff), settings.currency)}
+                        </Text>
+                    </View>
                 )}
             </View>
         );
     };
 
     return (
-        <SafeAreaView style={styles.safeArea}>
-            <ScrollView contentContainerStyle={styles.container}>
-                <Text style={styles.title}>Compare Loans</Text>
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+            <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+                <View style={styles.header}>
+                    <Text style={[styles.title, { color: theme.textPrimary }]}>Compare Loans</Text>
+                    <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Find the best deal for you</Text>
+                </View>
 
-                <View style={styles.inputContainer}>
-                    <View style={styles.loanColumn}>
-                        <Text style={styles.columnHeader}>Loan 1</Text>
+                <View style={styles.inputGrid}>
+                    <View style={[styles.sideCard, { backgroundColor: theme.card, borderColor: theme.border }, SHADOW.sm]}>
+                        <Text style={[styles.sideTitle, { color: '#3B82F6' }]}>Loan 1</Text>
                         <SliderInput
                             label="Amount"
                             value={loan1.amount}
-                            onChange={(v) => setLoan1({ ...loan1, amount: v })}
+                            onChange={(v: number) => setLoan1({ ...loan1, amount: v })}
                             min={1000}
                             max={10000000}
                             step={1000}
+                            prefix={currencySymbol}
                             compact
                         />
                         <SliderInput
                             label="Rate (%)"
                             value={loan1.rate}
-                            onChange={(v) => setLoan1({ ...loan1, rate: v })}
+                            onChange={(v: number) => setLoan1({ ...loan1, rate: v })}
                             min={1}
                             max={30}
                             step={0.1}
@@ -97,30 +114,29 @@ export default function CompareScreen() {
                         <SliderInput
                             label="Tenure (Mo)"
                             value={loan1.tenure}
-                            onChange={(v) => setLoan1({ ...loan1, tenure: v })}
+                            onChange={(v: number) => setLoan1({ ...loan1, tenure: v })}
                             min={1}
                             max={360}
                             compact
                         />
                     </View>
 
-                    <View style={styles.divider} />
-
-                    <View style={styles.loanColumn}>
-                        <Text style={styles.columnHeader}>Loan 2</Text>
+                    <View style={[styles.sideCard, { backgroundColor: theme.card, borderColor: theme.border }, SHADOW.sm]}>
+                        <Text style={[styles.sideTitle, { color: '#F59E0B' }]}>Loan 2</Text>
                         <SliderInput
                             label="Amount"
                             value={loan2.amount}
-                            onChange={(v) => setLoan2({ ...loan2, amount: v })}
+                            onChange={(v: number) => setLoan2({ ...loan2, amount: v })}
                             min={1000}
                             max={10000000}
                             step={1000}
+                            prefix={currencySymbol}
                             compact
                         />
                         <SliderInput
                             label="Rate (%)"
                             value={loan2.rate}
-                            onChange={(v) => setLoan2({ ...loan2, rate: v })}
+                            onChange={(v: number) => setLoan2({ ...loan2, rate: v })}
                             min={1}
                             max={30}
                             step={0.1}
@@ -129,7 +145,7 @@ export default function CompareScreen() {
                         <SliderInput
                             label="Tenure (Mo)"
                             value={loan2.tenure}
-                            onChange={(v) => setLoan2({ ...loan2, tenure: v })}
+                            onChange={(v: number) => setLoan2({ ...loan2, tenure: v })}
                             min={1}
                             max={360}
                             compact
@@ -137,16 +153,21 @@ export default function CompareScreen() {
                     </View>
                 </View>
 
-                <TouchableOpacity style={styles.compareBtn} onPress={handleCompare}>
+                <TouchableOpacity
+                    style={[styles.compareBtn, { backgroundColor: theme.primary }]}
+                    onPress={handleCompare}
+                    activeOpacity={0.8}
+                >
                     <Text style={styles.compareBtnText}>Compare Now</Text>
+                    <Ionicons name="git-compare-outline" size={20} color="#FFFFFF" style={{ marginLeft: 8 }} />
                 </TouchableOpacity>
 
                 {results && (
-                    <View style={styles.resultsContainer}>
-                        {renderComparisonRow('Monthly EMI', results.loan1.emi, results.loan2.emi)}
-                        {renderComparisonRow('Total Interest', results.loan1.totalInterest, results.loan2.totalInterest)}
-                        {renderComparisonRow('Total Payable', results.loan1.totalPayable, results.loan2.totalPayable)}
-                    </View>
+                    <Animated.View entering={FadeInUp.duration(600)} style={styles.resultsContainer}>
+                        {renderComparisonCard('Monthly EMI', results.loan1.emi, results.loan2.emi)}
+                        {renderComparisonCard('Total Interest', results.loan1.totalInterest, results.loan2.totalInterest)}
+                        {renderComparisonCard('Total Payable', results.loan1.totalPayable, results.loan2.totalPayable)}
+                    </Animated.View>
                 )}
             </ScrollView>
         </SafeAreaView>
@@ -156,105 +177,103 @@ export default function CompareScreen() {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
-        backgroundColor: Colors.background,
     },
     container: {
         padding: 20,
+        paddingBottom: 40,
+    },
+    header: {
+        marginBottom: 24,
     },
     title: {
         fontSize: 28,
-        fontWeight: 'bold',
-        color: Colors.textPrimary,
-        marginBottom: 24,
+        fontWeight: '800',
     },
-    inputContainer: {
+    subtitle: {
+        fontSize: 16,
+        marginTop: 4,
+        fontWeight: '600',
+    },
+    inputGrid: {
         flexDirection: 'row',
-        backgroundColor: Colors.card,
-        borderRadius: 16,
-        padding: 16,
-        borderWidth: 1,
-        borderColor: Colors.border,
+        gap: 12,
         marginBottom: 20,
     },
-    loanColumn: {
+    sideCard: {
         flex: 1,
+        padding: 16,
+        borderRadius: 20,
+        borderWidth: 1,
     },
-    columnHeader: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: Colors.primary,
+    sideTitle: {
+        fontSize: 14,
+        fontWeight: '900',
+        marginBottom: 16,
+        textTransform: 'uppercase',
         textAlign: 'center',
-        marginBottom: 12,
-    },
-    divider: {
-        width: 1,
-        backgroundColor: Colors.border,
-        marginHorizontal: 12,
     },
     compareBtn: {
-        backgroundColor: Colors.primary,
-        paddingVertical: 16,
-        borderRadius: 12,
+        paddingVertical: 18,
+        borderRadius: 20,
+        flexDirection: 'row',
+        justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 24,
+        marginBottom: 32,
+        ...SHADOW.md,
     },
     compareBtnText: {
-        color: Colors.white,
+        color: '#FFFFFF',
         fontSize: 18,
-        fontWeight: 'bold',
+        fontWeight: '800',
     },
     resultsContainer: {
         gap: 16,
     },
-    compareRow: {
-        backgroundColor: Colors.card,
-        borderRadius: 12,
-        padding: 16,
+    compareCard: {
+        padding: 20,
+        borderRadius: 24,
         borderWidth: 1,
-        borderColor: Colors.border,
     },
     compareLabel: {
-        fontSize: 14,
-        color: Colors.textSecondary,
-        marginBottom: 12,
-        textAlign: 'center',
-        fontWeight: '600',
+        fontSize: 13,
+        fontWeight: '800',
+        marginBottom: 16,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
     },
     compareValues: {
         flexDirection: 'row',
         gap: 12,
-        marginBottom: 8,
     },
-    valCard: {
+    valBox: {
         flex: 1,
-        backgroundColor: Colors.background,
-        padding: 12,
-        borderRadius: 8,
+        padding: 16,
+        borderRadius: 16,
         alignItems: 'center',
-        borderWidth: 1,
         borderColor: 'transparent',
-    },
-    betterCard: {
-        borderColor: Colors.primary,
-        backgroundColor: 'rgba(0, 200, 83, 0.05)',
+        borderWidth: 1,
     },
     valText: {
-        fontSize: 15,
-        fontWeight: 'bold',
-        color: Colors.textPrimary,
+        fontSize: 16,
+        fontWeight: '900',
     },
-    betterText: {
-        color: Colors.primary,
+    loanTag: {
+        fontSize: 10,
+        fontWeight: '800',
+        marginTop: 4,
+        opacity: 0.6,
+    },
+    diffBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 16,
+        paddingVertical: 8,
+        borderRadius: 12,
     },
     diffText: {
-        fontSize: 12,
-        textAlign: 'center',
-        marginTop: 4,
-    },
-    positiveDiff: {
-        color: Colors.primary,
-    },
-    negativeDiff: {
-        color: '#FF5252',
+        fontSize: 13,
+        fontWeight: '700',
+        marginLeft: 6,
     },
 });
