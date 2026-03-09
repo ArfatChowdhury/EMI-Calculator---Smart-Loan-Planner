@@ -2,6 +2,7 @@ import { Colors, SHADOW } from '@/constants/Colors';
 import { Currencies } from '@/constants/Currencies';
 import BannerAdComponent from '@/src/components/BannerAdComponent';
 import DonutChart from '@/src/components/DonutChart';
+import SliderInput from '@/src/components/SliderInput';
 import { useLoanContext } from '@/src/context/LoanContext';
 import { useSettings } from '@/src/hooks/useSettings';
 import { useSubscription } from '@/src/hooks/useSubscription';
@@ -258,6 +259,109 @@ export default function CalculatorScreen() {
                 <View style={styles.header}>
                     <Text style={[styles.title, { color: theme.textPrimary }]}>EMI Calculator</Text>
                     <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Plan your loans precisely</Text>
+                </View>
+
+                <View style={[styles.inputContainer, { backgroundColor: theme.card, borderColor: theme.border }, SHADOW.sm]}>
+                    <SliderInput
+                        label="Loan Amount"
+                        value={amount}
+                        onChange={setAmount}
+                        min={1000}
+                        max={10000000}
+                        step={1000}
+                        prefix={currencySymbol}
+                    />
+
+                    <SliderInput
+                        label="Interest Rate"
+                        value={rate}
+                        onChange={setRate}
+                        min={1}
+                        max={30}
+                        step={0.1}
+                        unit="%"
+                    />
+
+                    <View style={styles.tenureHeader}>
+                        <Text style={[styles.label, { color: theme.textPrimary }]}>Tenure</Text>
+                        <View style={[styles.toggleGroup, { backgroundColor: theme.background }]}>
+                            <TouchableOpacity
+                                style={[styles.toggleBtn, tenureType === 'months' && { backgroundColor: theme.primary }]}
+                                onPress={() => toggleTenureType('months')}
+                            >
+                                <Text style={[styles.toggleText, { color: tenureType === 'months' ? '#FFFFFF' : theme.textSecondary }]}>Months</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.toggleBtn, tenureType === 'years' && { backgroundColor: theme.primary }]}
+                                onPress={() => toggleTenureType('years')}
+                            >
+                                <Text style={[styles.toggleText, { color: tenureType === 'years' ? '#FFFFFF' : theme.textSecondary }]}>Years</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    <SliderInput
+                        label=""
+                        value={tenure}
+                        onChange={handleTenureChange}
+                        min={1}
+                        max={tenureType === 'years' ? 30 : 360}
+                        step={1}
+                        unit={tenureType === 'years' ? ' Yrs' : ' Mo'}
+                        compact
+                    />
+
+                    <View style={styles.typeContainer}>
+                        <Text style={[styles.label, { color: theme.textPrimary }]}>Interest Type</Text>
+                        <View style={styles.typeSelectors}>
+                            <TouchableOpacity
+                                style={[styles.typeBtn, { borderColor: loanType === 'reducing' ? theme.primary : theme.border, backgroundColor: loanType === 'reducing' ? `${theme.primary}10` : 'transparent' }]}
+                                onPress={() => setLoanType('reducing')}
+                            >
+                                <Text style={[styles.typeText, { color: loanType === 'reducing' ? theme.primary : theme.textSecondary }]}>Reducing</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.typeBtn, { borderColor: loanType === 'flat' ? theme.primary : theme.border, backgroundColor: loanType === 'flat' ? `${theme.primary}10` : 'transparent' }]}
+                                onPress={() => setLoanType('flat')}
+                            >
+                                <Text style={[styles.typeText, { color: loanType === 'flat' ? theme.primary : theme.textSecondary }]}>Flat Rate</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+
+                    {renderDivider()}
+
+                    <TouchableOpacity
+                        style={[styles.prepaymentToggle, { backgroundColor: theme.background }]}
+                        onPress={() => setAddPrepayment(!addPrepayment)}
+                    >
+                        <Text style={[styles.prepaymentLabel, { color: theme.textPrimary }]}>Include Monthly Prepayment</Text>
+                        <View style={[styles.toggleSwitch, { backgroundColor: addPrepayment ? theme.primary : theme.border }]}>
+                            <View style={[styles.toggleCircle, addPrepayment && styles.toggleCircleActive]} />
+                        </View>
+                    </TouchableOpacity>
+
+                    {addPrepayment && (
+                        <Animated.View entering={FadeInDown} style={{ marginBottom: 12 }}>
+                            <SliderInput
+                                label="Extra Monthly Pay"
+                                value={extraMonthly}
+                                onChange={setExtraMonthly}
+                                min={500}
+                                max={100000}
+                                step={500}
+                                prefix={currencySymbol}
+                                compact
+                            />
+                        </Animated.View>
+                    )}
+
+                    <TouchableOpacity
+                        style={[styles.calculateBtn, { backgroundColor: theme.primary }, SHADOW.md]}
+                        onPress={handleCalculate}
+                    >
+                        <Text style={styles.calculateBtnText}>Calculate EMI</Text>
+                    </TouchableOpacity>
                 </View>
 
                 {results && (
