@@ -1,9 +1,10 @@
 import { Colors, SHADOW } from '@/constants/Colors';
 import { Currencies } from '@/constants/Currencies';
+import BannerAdComponent from '@/src/components/BannerAdComponent';
 import DonutChart from '@/src/components/DonutChart';
-import SliderInput from '@/src/components/SliderInput';
 import { useLoanContext } from '@/src/context/LoanContext';
 import { useSettings } from '@/src/hooks/useSettings';
+import { useSubscription } from '@/src/hooks/useSubscription';
 import { formatCurrency } from '@/src/utils/currencyFormatter';
 import {
     calculateFlatEMI,
@@ -11,7 +12,7 @@ import {
     calculateReducingEMI,
     generateAmortizationSchedule
 } from '@/src/utils/emiCalculations';
-import { generateLoanPDF } from '@/src/utils/pdfGenerator';
+import { generateLoanPDF, showPdfInterstitial } from '@/src/utils/pdfGenerator';
 import * as Haptics from 'expo-haptics';
 import React, { useRef, useState } from 'react';
 import {
@@ -24,7 +25,7 @@ import {
     View
 } from 'react-native';
 import Animated, {
-    FadeInUp,
+    FadeInDown,
     useAnimatedStyle,
     useSharedValue,
     withRepeat,
@@ -168,10 +169,13 @@ export default function CalculatorScreen() {
         }
     };
 
+    const { isPremium } = useSubscription();
+
     const handleExportPDF = async () => {
         if (!results) return;
 
         try {
+            await showPdfInterstitial(isPremium);
             const actualTenureMonths = tenureType === 'years' ? tenure * 12 : tenure;
             const schedule = generateAmortizationSchedule(amount, rate, actualTenureMonths);
 
@@ -186,6 +190,7 @@ export default function CalculatorScreen() {
 
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } catch (error) {
+            console.error('Failed to generate PDF:', error);
             Alert.alert('Error', 'Failed to generate PDF');
         }
     };
@@ -255,162 +260,59 @@ export default function CalculatorScreen() {
                     <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Plan your loans precisely</Text>
                 </View>
 
-                {/* Premium Result Card */}
                 {results && (
-                    <Animated.View
-                        entering={FadeInUp.duration(800).springify()}
-                        style={[styles.resultBox, SHADOW.md]}
-                    >
-                        <ResultCardDesign />
-                        <View style={[styles.cardContent, { backgroundColor: 'rgba(255,255,255,0.08)' }]}>
-                            <Text style={styles.resultLabel}>Monthly EMI</Text>
-                            <Animated.Text style={[styles.resultAmount, glowStyle]}>
-                                {formatCurrency(results.emi, settings.currency)}
-                            </Animated.Text>
-
-                            <View style={styles.resultFooter}>
-                                <View style={styles.resultStat}>
-                                    <Text style={styles.resultStatLabel}>Total Interest</Text>
-                                    <Text style={styles.resultStatValue}>{formatCurrency(results.totalInterest, settings.currency)}</Text>
-                                </View>
-                                <View style={[styles.resultDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
-                                <View style={styles.resultStat}>
-                                    <Text style={styles.resultStatLabel}>Total Amount</Text>
-                                    <Text style={styles.resultStatValue}>{formatCurrency(results.totalPayable, settings.currency)}</Text>
-                                </View>
-                                <View style={[styles.resultDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
-                                <View style={styles.resultStat}>
-                                    <Text style={styles.resultStatLabel}>End Date</Text>
-                                    <Text style={styles.resultStatValue}>{results.endDate}</Text>
-                                </View>
-                            </View>
-                        </View>
-                    </Animated.View>
-                )}
-
-                <View style={[styles.inputContainer, { backgroundColor: theme.card, borderColor: theme.border }, SHADOW.sm]}>
-                    <SliderInput
-                        label="Loan Amount"
-                        value={amount}
-                        onChange={setAmount}
-                        min={1000}
-                        max={10000000}
-                        step={1000}
-                        prefix={currencySymbol}
-                    />
-
-                    {renderDivider()}
-
-                    <SliderInput
-                        label="Interest Rate"
-                        value={rate}
-                        onChange={setRate}
-                        min={1}
-                        max={36}
-                        step={0.1}
-                        unit="%"
-                    />
-
-                    {renderDivider()}
-
-                    <View style={styles.tenureHeader}>
-                        <Text style={[styles.label, { color: theme.textPrimary }]}>Loan Tenure</Text>
-                        <View style={[styles.toggleGroup, { backgroundColor: theme.background }]}>
-                            <TouchableOpacity
-                                style={[styles.toggleBtn, tenureType === 'months' && { backgroundColor: theme.primary }]}
-                                onPress={() => toggleTenureType('months')}
-                            >
-                                <Text style={[styles.toggleText, { color: tenureType === 'months' ? theme.textOnPrimary : theme.textSecondary }]}>Months</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.toggleBtn, tenureType === 'years' && { backgroundColor: theme.primary }]}
-                                onPress={() => toggleTenureType('years')}
-                            >
-                                <Text style={[styles.toggleText, { color: tenureType === 'years' ? theme.textOnPrimary : theme.textSecondary }]}>Years</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    <SliderInput
-                        label=""
-                        value={tenure}
-                        onChange={handleTenureChange}
-                        min={1}
-                        max={tenureType === 'months' ? 360 : 30}
-                        unit={tenureType === 'months' ? ' Mo' : ' Yr'}
-                    />
-
-                    {renderDivider()}
-
-                    <View style={styles.typeContainer}>
-                        <Text style={[styles.label, { color: theme.textPrimary }]}>Loan Type</Text>
-                        <View style={styles.typeSelectors}>
-                            <TouchableOpacity
-                                style={[styles.typeBtn, { borderColor: theme.border }, loanType === 'reducing' && { borderColor: theme.primary, backgroundColor: `${theme.primary}10` }]}
-                                onPress={() => setLoanType('reducing')}
-                            >
-                                <Text style={[styles.typeText, { color: loanType === 'reducing' ? theme.primary : theme.textSecondary }]}>Reducing</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.typeBtn, { borderColor: theme.border }, loanType === 'flat' && { borderColor: theme.primary, backgroundColor: `${theme.primary}10` }]}
-                                onPress={() => setLoanType('flat')}
-                            >
-                                <Text style={[styles.typeText, { color: loanType === 'flat' ? theme.primary : theme.textSecondary }]}>Flat Rate</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    {loanType === 'reducing' && (
-                        <TouchableOpacity
-                            style={[styles.prepaymentToggle, { backgroundColor: theme.background }]}
-                            onPress={() => setAddPrepayment(!addPrepayment)}
-                        >
-                            <Text style={[styles.prepaymentLabel, { color: theme.textPrimary }]}>Add Monthly Prepayment</Text>
-                            <View style={[styles.toggleSwitch, { backgroundColor: theme.border }, addPrepayment && { backgroundColor: theme.primary }]}>
-                                <View style={[styles.toggleCircle, addPrepayment && styles.toggleCircleActive]} />
-                            </View>
-                        </TouchableOpacity>
-                    )}
-
-                    {addPrepayment && loanType === 'reducing' && (
-                        <SliderInput
-                            label="Extra Payment"
-                            value={extraMonthly}
-                            onChange={setExtraMonthly}
-                            min={500}
-                            max={100000}
-                            step={500}
-                            prefix={currencySymbol}
-                        />
-                    )}
-
-                    <TouchableOpacity
-                        style={[styles.calculateBtn, { backgroundColor: theme.primary }]}
-                        onPress={handleCalculate}
-                        activeOpacity={0.8}
-                    >
-                        <Text style={styles.calculateBtnText}>Calculate EMI</Text>
-                    </TouchableOpacity>
-                </View>
-
-                {results && (
-                    <Animated.View
-                        entering={FadeInUp.duration(600)}
+                    <View
                         style={styles.resultsSection}
-                        onLayout={(e: LayoutChangeEvent) => { resultsRef.current = e.nativeEvent.layout.y; }}
+                        onLayout={(e: LayoutChangeEvent) => {
+                            resultsRef.current = e.nativeEvent.layout.y;
+                        }}
                     >
+                        <Animated.View
+                            entering={FadeInDown.duration(600).springify()}
+                            style={[styles.resultBox, SHADOW.md]}
+                        >
+                            <ResultCardDesign />
+                            <View style={[styles.cardContent, { backgroundColor: 'rgba(255,255,255,0.08)' }]}>
+                                <Text style={styles.resultLabel}>Monthly EMI</Text>
+                                <Animated.Text style={[styles.resultAmount, glowStyle]}>
+                                    {formatCurrency(results.emi, settings.currency)}
+                                </Animated.Text>
+
+                                <View style={styles.resultFooter}>
+                                    <View style={styles.resultStat}>
+                                        <Text style={styles.resultStatLabel}>Total Interest</Text>
+                                        <Text style={styles.resultStatValue}>{formatCurrency(results.totalInterest, settings.currency)}</Text>
+                                    </View>
+                                    <View style={[styles.resultDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
+                                    <View style={styles.resultStat}>
+                                        <Text style={styles.resultStatLabel}>Total Amount</Text>
+                                        <Text style={styles.resultStatValue}>{formatCurrency(results.totalPayable, settings.currency)}</Text>
+                                    </View>
+                                    <View style={[styles.resultDivider, { backgroundColor: 'rgba(255,255,255,0.2)' }]} />
+                                    <View style={styles.resultStat}>
+                                        <Text style={styles.resultStatLabel}>End Date</Text>
+                                        <Text style={styles.resultStatValue}>{results.endDate}</Text>
+                                    </View>
+                                </View>
+                            </View>
+                        </Animated.View>
+
                         {results.savings && (
-                            <View style={[styles.savingsBanner, { backgroundColor: `${theme.income}15`, borderColor: theme.income }]}>
+                            <Animated.View
+                                entering={FadeInDown.delay(200).duration(600)}
+                                style={[styles.savingsBanner, { backgroundColor: `${theme.income}15`, borderColor: theme.income }]}
+                            >
                                 <View style={styles.warningTextContent}>
                                     <Text style={[styles.warningTitle, { color: theme.income }]}>Interest Saved</Text>
                                     <Text style={[styles.warningDesc, { color: theme.textSecondary }]}>
                                         Save {formatCurrency(results.savings.interestSaved, settings.currency)} and close {results.savings.tenureSaved} months early!
                                     </Text>
                                 </View>
-                            </View>
+                            </Animated.View>
                         )}
 
-                        <View
+                        <Animated.View
+                            entering={FadeInDown.delay(400).duration(600)}
                             style={[styles.chartBox, { backgroundColor: theme.card, borderColor: theme.border }, SHADOW.sm]}
                             onLayout={(e) => setChartWidth(e.nativeEvent.layout.width)}
                         >
@@ -422,9 +324,12 @@ export default function CalculatorScreen() {
                                     width={chartWidth}
                                 />
                             )}
-                        </View>
+                        </Animated.View>
 
-                        <View style={styles.actionButtons}>
+                        <Animated.View
+                            entering={FadeInDown.delay(600).duration(600)}
+                            style={styles.actionButtons}
+                        >
                             <TouchableOpacity
                                 style={[styles.actionBtn, { borderColor: theme.primary, borderWidth: 2 }]}
                                 onPress={handleSave}
@@ -437,9 +342,12 @@ export default function CalculatorScreen() {
                             >
                                 <Text style={[styles.actionBtnText, { color: '#FFFFFF' }]}>PDF Report</Text>
                             </TouchableOpacity>
-                        </View>
-                    </Animated.View>
+                        </Animated.View>
+                    </View>
                 )}
+
+                <View style={{ height: 20 }} />
+                <BannerAdComponent isPremium={isPremium} />
             </ScrollView>
         </SafeAreaView>
     );

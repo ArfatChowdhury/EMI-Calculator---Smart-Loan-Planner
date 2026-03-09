@@ -17,9 +17,13 @@ import {
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import BannerAdComponent from '@/src/components/BannerAdComponent';
+import { useSubscription } from '@/src/hooks/useSubscription';
+
 export default function CompareScreen() {
     const { settings } = useSettings();
     const theme = Colors[(settings.theme || 'light') as keyof typeof Colors];
+    const { isPremium } = useSubscription();
     const [loan1, setLoan1] = useState({ amount: 500000, rate: 9.5, tenure: 60 });
     const [loan2, setLoan2] = useState({ amount: 500000, rate: 10.5, tenure: 60 });
     const [results, setResults] = useState<any>(null);
@@ -169,6 +173,8 @@ export default function CompareScreen() {
                         {renderComparisonCard('Total Payable', results.loan1.totalPayable, results.loan2.totalPayable)}
                     </Animated.View>
                 )}
+                <View style={{ height: 20 }} />
+                <BannerAdComponent isPremium={isPremium} />
             </ScrollView>
         </SafeAreaView>
     );

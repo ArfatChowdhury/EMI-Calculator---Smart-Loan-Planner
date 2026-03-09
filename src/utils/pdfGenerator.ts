@@ -1,13 +1,62 @@
+import { AdUnits } from '@/src/constants/adUnits';
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { formatCurrency } from './currencyFormatter';
 
 /**
- * Generates a PDF for a loan summary and amortization table
- * @param {Object} loanDetails - { principal, rate, tenure, emi, totalInterest, totalPayable }
- * @param {Array} schedule - Array of { month, balance, principal, interest }
+ * Shows an interstitial ad before PDF export if the user is not premium.
  */
-export const generateLoanPDF = async (loanDetails, schedule) => {
+export const showPdfInterstitial = (
+    isPremium: boolean
+): Promise<void> => {
+    return new Promise((resolve) => {
+
+        // Premium users or dev mode — skip ad
+        if (__DEV__ || isPremium) {
+            resolve();
+            return;
+        }
+
+        try {
+            const {
+                InterstitialAd,
+                AdEventType,
+            } = require('react-native-google-mobile-ads');
+
+            const interstitial = InterstitialAd.createForAdRequest(
+                AdUnits.interstitial,
+                { requestNonPersonalizedAdsOnly: true }
+            );
+
+            // Continue to PDF when ad closes
+            interstitial.addAdEventListener(AdEventType.CLOSED, () => {
+                resolve();
+            });
+
+            // If ad fails continue to PDF anyway
+            interstitial.addAdEventListener(
+                AdEventType.ERROR,
+                () => resolve()
+            );
+
+            interstitial.addAdEventListener(AdEventType.LOADED, () => {
+                interstitial.show();
+            });
+
+            interstitial.load();
+
+            // Safety timeout 5s — always resolve
+            setTimeout(resolve, 5000);
+        } catch (e) {
+            resolve();
+        }
+    });
+};
+
+/**
+ * Generates a PDF for a loan summary and amortization table
+ */
+export const generateLoanPDF = async (loanDetails: any, schedule: any) => {
     const htmlContent = `
     <html>
       <head>
@@ -70,7 +119,7 @@ export const generateLoanPDF = async (loanDetails, schedule) => {
             </tr>
           </thead>
           <tbody>
-            ${schedule.map(item => `
+            ${schedule.map((item: any) => `
               <tr>
                 <td>${item.month}</td>
                 <td>${formatCurrency(item.openingBalance)}</td>

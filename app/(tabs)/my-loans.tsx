@@ -1,7 +1,10 @@
 import { Colors } from '@/constants/Colors';
+import BannerAdComponent from '@/src/components/BannerAdComponent';
 import LoanCard from '@/src/components/LoanCard';
+import NativeAdCard from '@/src/components/NativeAdCard';
 import { useLoanContext } from '@/src/context/LoanContext';
 import { useSettings } from '@/src/hooks/useSettings';
+import { useSubscription } from '@/src/hooks/useSubscription';
 import { formatCurrency } from '@/src/utils/currencyFormatter';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -32,6 +35,14 @@ export default function MyLoansScreen() {
     const theme = Colors[(settings.theme || 'light') as keyof typeof Colors];
     const { loans, loading, deleteLoan, setActiveLoan } = useLoanContext();
     const router = useRouter();
+    const { isPremium } = useSubscription();
+
+    const listDataWithAds = (loans as Loan[]).flatMap((item, index) => {
+        if ((index + 1) % 3 === 0) {
+            return [item, { type: 'AD', id: `ad_${index}` }];
+        }
+        return [item];
+    });
 
     const totalOutstanding = (loans as Loan[]).reduce((acc, loan) => acc + loan.principal, 0);
 
@@ -89,21 +100,34 @@ export default function MyLoansScreen() {
                 <Text style={[styles.title, { color: theme.textPrimary }]}>My Loans</Text>
 
                 <FlatList
-                    data={loans as Loan[]}
-                    keyExtractor={(item) => item.id}
+                    data={listDataWithAds}
+                    keyExtractor={(item: any) => item.id}
                     ListHeaderComponent={loans.length > 0 ? renderHeader : null}
-                    renderItem={({ item }) => (
-                        <LoanCard
-                            loan={item}
-                            onPress={() => handleEdit(item)}
-                            onEdit={() => handleEdit(item)}
-                            onDelete={() => handleDelete(item.id)}
-                        />
-                    )}
+                    renderItem={({ item }: any) => {
+                        if (item.type === 'AD') {
+                            return (
+                                <NativeAdCard
+                                    isPremium={isPremium}
+                                    onRateUs={() => {
+                                        // TODO: Add Play Store link
+                                    }}
+                                />
+                            );
+                        }
+                        return (
+                            <LoanCard
+                                loan={item}
+                                onPress={() => handleEdit(item)}
+                                onEdit={() => handleEdit(item)}
+                                onDelete={() => handleDelete(item.id)}
+                            />
+                        );
+                    }}
                     contentContainerStyle={styles.listContent}
                     ListEmptyComponent={renderEmptyState}
                     showsVerticalScrollIndicator={false}
                 />
+                <BannerAdComponent isPremium={isPremium} />
             </View>
         </SafeAreaView>
     );

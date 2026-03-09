@@ -108,6 +108,7 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         textTransform: 'uppercase',
         marginBottom: 2,
+        color: '#9CA3AF', // Subtle grey for labels
     },
     legendText: {
         fontSize: 12,

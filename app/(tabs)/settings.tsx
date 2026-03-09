@@ -1,6 +1,7 @@
 import { Colors, SHADOW } from '@/constants/Colors';
 import { Currencies } from '@/constants/Currencies';
 import { useSettings } from '@/src/hooks/useSettings';
+import { useSubscription } from '@/src/hooks/useSubscription';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
@@ -29,6 +30,26 @@ export default function SettingsScreen() {
     const handleSelectCurrency = (code: string) => {
         updateSettings({ currency: code });
         setCurrencyModalVisible(false);
+    };
+
+    const { isPremium, purchasePremium, restorePurchases } = useSubscription();
+
+    const handlePurchase = async () => {
+        const success = await purchasePremium();
+        if (success) {
+            Alert.alert('🎉 Welcome to Premium!', 'All ads have been removed.');
+        } else {
+            Alert.alert('Purchase Failed', 'Please try again.');
+        }
+    };
+
+    const handleRestore = async () => {
+        const success = await restorePurchases();
+        if (success) {
+            Alert.alert('✅ Restored!', 'Your premium access has been restored.');
+        } else {
+            Alert.alert('Nothing to Restore', 'No previous purchases found.');
+        }
     };
 
     const renderItem = (icon: any, label: string, value: string, onPress: () => void, isLast = false) => (
@@ -81,6 +102,36 @@ export default function SettingsScreen() {
                         />
                     </View>
                 </View>
+
+                <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Premium</Text>
+                {!isPremium ? (
+                    <View style={[styles.premiumCard, { backgroundColor: theme.primary, borderColor: theme.primary }, SHADOW.md]}>
+                        <View style={styles.premiumHeader}>
+                            <Text style={styles.premiumTitle}>✨ Go Premium</Text>
+                            <Text style={styles.premiumPrice}>$1.99 / month</Text>
+                        </View>
+                        <Text style={styles.premiumPerks}>
+                            ✅ Remove all annoying ads{'\n'}
+                            ✅ Unlimited PDF exports{'\n'}
+                            ✅ Support the developer
+                        </Text>
+                        <TouchableOpacity
+                            style={[styles.premiumBtn, { backgroundColor: '#FFFFFF' }]}
+                            onPress={handlePurchase}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={[styles.premiumBtnText, { color: theme.primary }]}>Upgrade Now</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={handleRestore} style={styles.restoreBtn}>
+                            <Text style={styles.restoreText}>Restore Purchase</Text>
+                        </TouchableOpacity>
+                    </View>
+                ) : (
+                    <View style={[styles.premiumCard, { backgroundColor: '#059669', borderColor: '#059669' }, SHADOW.sm]}>
+                        <Text style={styles.premiumTitle}>✨ Premium Active</Text>
+                        <Text style={styles.premiumActiveSub}>All ads removed. Enjoy the experience!</Text>
+                    </View>
+                )}
 
                 <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Support & Legal</Text>
                 <View style={[styles.settingsCard, { backgroundColor: theme.card, borderColor: theme.border }, SHADOW.sm]}>
@@ -273,5 +324,60 @@ const styles = StyleSheet.create({
     currencySymbol: {
         fontSize: 20,
         fontWeight: '900',
+    },
+    // Premium Styles
+    premiumCard: {
+        borderRadius: 24,
+        padding: 24,
+        marginBottom: 24,
+        borderWidth: 1,
+    },
+    premiumHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    premiumTitle: {
+        fontSize: 22,
+        fontWeight: '900',
+        color: '#FFFFFF',
+    },
+    premiumPrice: {
+        fontSize: 16,
+        fontWeight: '800',
+        color: 'rgba(255,255,255,0.9)',
+    },
+    premiumPerks: {
+        fontSize: 14,
+        lineHeight: 22,
+        color: 'rgba(255,255,255,0.9)',
+        marginBottom: 24,
+        fontWeight: '600',
+    },
+    premiumBtn: {
+        paddingVertical: 14,
+        borderRadius: 14,
+        alignItems: 'center',
+        marginBottom: 12,
+    },
+    premiumBtnText: {
+        fontWeight: '800',
+        fontSize: 16,
+    },
+    restoreBtn: {
+        alignItems: 'center',
+    },
+    restoreText: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: 'rgba(255,255,255,0.7)',
+        textDecorationLine: 'underline',
+    },
+    premiumActiveSub: {
+        color: '#FFFFFF',
+        opacity: 0.9,
+        marginTop: 8,
+        fontWeight: '600',
     },
 });
