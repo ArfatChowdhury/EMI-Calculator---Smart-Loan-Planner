@@ -30,16 +30,18 @@ export default function BannerAdComponent({
         } = require('react-native-google-mobile-ads');
 
         return (
-            <BannerAd
-                unitId={AdUnits.banner}
-                size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
-                requestOptions={{
-                    requestNonPersonalizedAdsOnly: true,
-                }}
-                onAdFailedToLoad={(error: any) => {
-                    console.warn('Banner ad failed to load:', error);
-                }}
-            />
+            <View style={styles.bannerContainer}>
+                <BannerAd
+                    unitId={AdUnits.banner}
+                    size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+                    requestOptions={{
+                        requestNonPersonalizedAdsOnly: true,
+                    }}
+                    onAdFailedToLoad={(error: any) => {
+                        console.warn('Banner ad failed to load:', error);
+                    }}
+                />
+            </View>
         );
     } catch (e) {
         return null;
@@ -58,4 +60,10 @@ const styles = StyleSheet.create({
         color: '#555555',
         fontSize: 12,
     },
+    bannerContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        marginTop: 10,
+    }
 });

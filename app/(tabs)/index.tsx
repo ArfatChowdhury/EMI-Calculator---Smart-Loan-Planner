@@ -2,6 +2,7 @@ import { Colors, SHADOW } from '@/constants/Colors';
 import { Currencies } from '@/constants/Currencies';
 import BannerAdComponent from '@/src/components/BannerAdComponent';
 import DonutChart from '@/src/components/DonutChart';
+import LimnerLogo from '@/src/components/LimnerLogo';
 import SliderInput from '@/src/components/SliderInput';
 import { useLoanContext } from '@/src/context/LoanContext';
 import { useSettings } from '@/src/hooks/useSettings';
@@ -257,7 +258,7 @@ export default function CalculatorScreen() {
                 showsVerticalScrollIndicator={false}
             >
                 <View style={styles.header}>
-                    <Text style={[styles.title, { color: theme.textPrimary }]}>EMI Calculator</Text>
+                    <LimnerLogo width={160} height={50} color={theme.textPrimary} />
                     <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Plan your loans precisely</Text>
                 </View>
 

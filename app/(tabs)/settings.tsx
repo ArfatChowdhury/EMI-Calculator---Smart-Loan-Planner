@@ -1,5 +1,6 @@
 import { Colors, SHADOW } from '@/constants/Colors';
 import { Currencies } from '@/constants/Currencies';
+import BannerAdComponent from '@/src/components/BannerAdComponent';
 import { useSettings } from '@/src/hooks/useSettings';
 import { useSubscription } from '@/src/hooks/useSubscription';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,11 +8,14 @@ import React, { useState } from 'react';
 import {
     Alert,
     FlatList,
+    Linking,
     Modal,
+    Platform,
     ScrollView,
     StyleSheet,
     Switch,
     Text,
+    TextInput,
     TouchableOpacity,
     View
 } from 'react-native';
@@ -21,6 +25,9 @@ export default function SettingsScreen() {
     const { settings, updateSettings } = useSettings();
     const theme = Colors[(settings.theme || 'light') as keyof typeof Colors];
     const [currencyModalVisible, setCurrencyModalVisible] = useState(false);
+    const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
+    const [feedbackType, setFeedbackType] = useState('Suggestion');
+    const [feedbackText, setFeedbackText] = useState('');
 
     const handleToggleTheme = () => {
         const newTheme = settings.theme === 'dark' ? 'light' : 'dark';
@@ -32,7 +39,7 @@ export default function SettingsScreen() {
         setCurrencyModalVisible(false);
     };
 
-    const { isPremium, purchasePremium, restorePurchases } = useSubscription();
+    const { isPremium, purchasePremium, restorePurchases, presentCustomerCenter } = useSubscription();
 
     const handlePurchase = async () => {
         const success = await purchasePremium();
@@ -50,6 +57,26 @@ export default function SettingsScreen() {
         } else {
             Alert.alert('Nothing to Restore', 'No previous purchases found.');
         }
+    };
+
+    const handleSendFeedback = () => {
+        if (!feedbackText.trim()) {
+            Alert.alert('Empty Feedback', 'Please enter some details before sending.');
+            return;
+        }
+
+        const email = 'limnersapp@gmail.com';
+        const subject = `Limners App Feedback: ${feedbackType}`;
+        const body = `${feedbackText}\n\n---\nPlatform: ${Platform.OS}\nVersion: 1.0.0`;
+        const mailto = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+        Linking.openURL(mailto).catch(err => {
+            console.error('Error opening email client:', err);
+            Alert.alert('Error', 'Could not open your email client. Please email limnersapp@gmail.com directly.');
+        });
+
+        setFeedbackModalVisible(false);
+        setFeedbackText('');
     };
 
     const renderItem = (icon: any, label: string, value: string, onPress: () => void, isLast = false) => (
@@ -130,11 +157,19 @@ export default function SettingsScreen() {
                     <View style={[styles.premiumCard, { backgroundColor: '#059669', borderColor: '#059669' }, SHADOW.sm]}>
                         <Text style={styles.premiumTitle}>✨ Premium Active</Text>
                         <Text style={styles.premiumActiveSub}>All ads removed. Enjoy the experience!</Text>
+                        <TouchableOpacity
+                            style={[styles.premiumBtn, { backgroundColor: 'rgba(255,255,255,0.2)', marginTop: 16 }]}
+                            onPress={presentCustomerCenter}
+                            activeOpacity={0.8}
+                        >
+                            <Text style={[styles.premiumBtnText, { color: '#FFFFFF' }]}>Manage Subscription</Text>
+                        </TouchableOpacity>
                     </View>
                 )}
 
                 <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Support & Legal</Text>
                 <View style={[styles.settingsCard, { backgroundColor: theme.card, borderColor: theme.border }, SHADOW.sm]}>
+                    {renderItem('chatbubble-ellipses-outline', 'Send Feedback', '', () => setFeedbackModalVisible(true))}
                     {renderItem('information-circle-outline', 'Version', '1.0.0', () => { })}
                     {renderItem('shield-checkmark-outline', 'Privacy Policy', '', () => { })}
                     {renderItem('document-text-outline', 'Terms of Service', '', () => { }, true)}
@@ -144,6 +179,9 @@ export default function SettingsScreen() {
                     <Ionicons name="trash-outline" size={20} color={theme.expense} style={{ marginRight: 8 }} />
                     <Text style={[styles.resetBtnText, { color: theme.expense }]}>Reset All Data</Text>
                 </TouchableOpacity>
+
+                <View style={{ height: 20 }} />
+                <BannerAdComponent isPremium={isPremium} />
             </ScrollView>
 
             <Modal
@@ -184,6 +222,70 @@ export default function SettingsScreen() {
                                 </TouchableOpacity>
                             )}
                         />
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Feedback Modal */}
+            <Modal
+                visible={feedbackModalVisible}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setFeedbackModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.modalContent, { backgroundColor: theme.card, padding: 24 }]}>
+                        <View style={[styles.modalHeader, { padding: 0, paddingBottom: 16, borderBottomWidth: 0 }]}>
+                            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Send Feedback</Text>
+                            <TouchableOpacity onPress={() => setFeedbackModalVisible(false)} style={[styles.doneBtn, { backgroundColor: theme.background }]}>
+                                <Ionicons name="close" size={20} color={theme.textPrimary} />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={styles.feedbackTypeSelector}>
+                            {['Suggestion', 'Bug Report', 'Question'].map(type => (
+                                <TouchableOpacity
+                                    key={type}
+                                    style={[
+                                        styles.typeChip,
+                                        { backgroundColor: feedbackType === type ? theme.primary : theme.background }
+                                    ]}
+                                    onPress={() => setFeedbackType(type)}
+                                    activeOpacity={0.8}
+                                >
+                                    <Text style={[
+                                        styles.typeChipText,
+                                        { color: feedbackType === type ? '#FFFFFF' : theme.textPrimary }
+                                    ]}>{type}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        <TextInput
+                            style={[
+                                styles.feedbackInput,
+                                {
+                                    backgroundColor: theme.background,
+                                    color: theme.textPrimary,
+                                    borderColor: theme.border
+                                }
+                            ]}
+                            placeholder="Tell us what you think or report a problem..."
+                            placeholderTextColor={theme.textSecondary}
+                            multiline
+                            textAlignVertical="top"
+                            value={feedbackText}
+                            onChangeText={setFeedbackText}
+                        />
+
+                        <TouchableOpacity
+                            style={[styles.sendFeedbackBtn, { backgroundColor: theme.primary }]}
+                            onPress={handleSendFeedback}
+                            activeOpacity={0.8}
+                        >
+                            <Ionicons name="paper-plane-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                            <Text style={styles.sendFeedbackBtnText}>Send to Developer</Text>
+                        </TouchableOpacity>
                     </View>
                 </View>
             </Modal>
@@ -379,5 +481,41 @@ const styles = StyleSheet.create({
         opacity: 0.9,
         marginTop: 8,
         fontWeight: '600',
+    },
+    // Feedback Styles
+    feedbackTypeSelector: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+        marginBottom: 16,
+    },
+    typeChip: {
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+    },
+    typeChipText: {
+        fontSize: 13,
+        fontWeight: '700',
+    },
+    feedbackInput: {
+        height: 120,
+        borderWidth: 1,
+        borderRadius: 16,
+        padding: 16,
+        fontSize: 15,
+        marginBottom: 20,
+    },
+    sendFeedbackBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+        borderRadius: 16,
+    },
+    sendFeedbackBtnText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '800',
     },
 });

@@ -1,3 +1,4 @@
+import { AdUnits } from '@/src/constants/adUnits';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -26,17 +27,46 @@ export default function NativeAdCard({
 
     if (__DEV__) return <FallbackCard />;
 
-    // Production native ad
+    // Production native ad fallback (using MEDIUM_RECTANGLE Banner)
     try {
-        // TODO: Implement full NativeAd when needed
-        // For now uses fallback card
-        return <FallbackCard />;
+        const { BannerAd, BannerAdSize } = require('react-native-google-mobile-ads');
+
+        return (
+            <View style={styles.adContainer}>
+                <Text style={styles.adLabel}>Advertisement</Text>
+                <View style={styles.bannerWrapper}>
+                    <BannerAd
+                        unitId={AdUnits.banner} // Using banner ID as Native Advanced is not supported by this library
+                        size={BannerAdSize.MEDIUM_RECTANGLE}
+                        requestOptions={{
+                            requestNonPersonalizedAdsOnly: true,
+                        }}
+                    />
+                </View>
+            </View>
+        );
     } catch (e) {
         return <FallbackCard />;
     }
 }
 
 const styles = StyleSheet.create({
+    adContainer: {
+        backgroundColor: '#1A1A1A',
+        borderRadius: 12,
+        padding: 16,
+        marginVertical: 8,
+        borderWidth: 1,
+        borderColor: '#2A2A2A',
+        alignItems: 'center',
+    },
+    bannerWrapper: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        overflow: 'hidden',
+        marginTop: 8,
+    },
     card: {
         backgroundColor: '#1A1A1A',
         borderRadius: 12,

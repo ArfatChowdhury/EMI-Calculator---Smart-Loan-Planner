@@ -1,34 +1,58 @@
 import { useEffect, useState } from 'react';
-import Purchases, {
-    LOG_LEVEL,
-    PurchasesPackage,
-} from 'react-native-purchases';
+import { Platform } from 'react-native';
+import Purchases, { CustomerInfo, LOG_LEVEL } from 'react-native-purchases';
+import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 
-// TODO: Replace with your RevenueCat Android API key
-const REVENUECAT_ANDROID_KEY = 'YOUR_REVENUECAT_ANDROID_KEY';
+// Using the provided API key
+const REVENUECAT_API_KEY = 'test_EEJKeYnAWNGVBwfhUEvZSoRlhaB';
 
 // This must match entitlement ID in RevenueCat dashboard
-const ENTITLEMENT_ID = 'premium';
+const ENTITLEMENT_ID = 'Limners Pro';
 
 export function useSubscription() {
     const [isPremium, setIsPremium] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [offerings, setOfferings] = useState<any>(null);
+    const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
 
     useEffect(() => {
         setupRevenueCat();
+
+        // Listen for external purchase changes
+        const listener = (info: CustomerInfo) => {
+            updateCustomerInformation(info);
+        };
+
+        Purchases.addCustomerInfoUpdateListener(listener);
+
+        return () => {
+            Purchases.removeCustomerInfoUpdateListener(listener);
+        };
     }, []);
+
+    const updateCustomerInformation = async (info?: CustomerInfo) => {
+        try {
+            const latestInfo = info || await Purchases.getCustomerInfo();
+            setCustomerInfo(latestInfo);
+
+            const isActive = typeof latestInfo.entitlements.active[ENTITLEMENT_ID] !== 'undefined';
+            setIsPremium(isActive);
+        } catch (error) {
+            console.error('Failed to get customer info:', error);
+            setIsPremium(false);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const setupRevenueCat = async () => {
         try {
             if (__DEV__) {
                 Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
             }
-            await Purchases.configure({
-                apiKey: REVENUECAT_ANDROID_KEY,
-            });
-            await checkSubscription();
-            await fetchOfferings();
+            if (Platform.OS === 'ios' || Platform.OS === 'android') {
+                await Purchases.configure({ apiKey: REVENUECAT_API_KEY });
+            }
+            await updateCustomerInformation();
         } catch (e) {
             console.error('RevenueCat setup error:', e);
             setLoading(false);
@@ -36,56 +60,43 @@ export function useSubscription() {
     };
 
     const checkSubscription = async () => {
-        try {
-            const customerInfo = await Purchases.getCustomerInfo();
-            const isActive =
-                typeof customerInfo.entitlements.active[ENTITLEMENT_ID] !== 'undefined';
-            setIsPremium(isActive);
-        } catch (e) {
-            console.error('Check subscription error:', e);
-            setIsPremium(false);
-        } finally {
-            setLoading(false);
-        }
+        await updateCustomerInformation();
     };
 
-    const fetchOfferings = async () => {
-        try {
-            const result = await Purchases.getOfferings();
-            if (result.current) {
-                setOfferings(result.current);
-            }
-        } catch (e) {
-            console.error('Fetch offerings error:', e);
-        }
-    };
-
+    // Keep purchasePremium for backwards UI compatibility but route it to presentPaywall
     const purchasePremium = async (): Promise<boolean> => {
         try {
-            if (!offerings?.availablePackages?.length) {
-                console.error('No packages available');
-                return false;
+            const paywallResult = await RevenueCatUI.presentPaywall();
+
+            switch (paywallResult) {
+                case PAYWALL_RESULT.PURCHASED:
+                case PAYWALL_RESULT.RESTORED:
+                    await updateCustomerInformation();
+                    return true;
+                case PAYWALL_RESULT.CANCELLED:
+                case PAYWALL_RESULT.ERROR:
+                    return false;
             }
-            const pkg: PurchasesPackage = offerings.availablePackages[0];
-            const { customerInfo } = await Purchases.purchasePackage(pkg);
-            const isActive =
-                typeof customerInfo.entitlements.active[ENTITLEMENT_ID] !== 'undefined';
-            setIsPremium(isActive);
-            return isActive;
-        } catch (e: any) {
-            if (!e.userCancelled) {
-                console.error('Purchase failed:', e);
-            }
+        } catch (error) {
+            console.error('Error presenting Paywall:', error);
             return false;
+        }
+        return false;
+    };
+
+    const presentCustomerCenter = async () => {
+        try {
+            await RevenueCatUI.presentCustomerCenter();
+        } catch (error) {
+            console.error('Error presenting Customer Center:', error);
         }
     };
 
     const restorePurchases = async (): Promise<boolean> => {
         try {
-            const customerInfo = await Purchases.restorePurchases();
-            const isActive =
-                typeof customerInfo.entitlements.active[ENTITLEMENT_ID] !== 'undefined';
-            setIsPremium(isActive);
+            const restoredInfo = await Purchases.restorePurchases();
+            await updateCustomerInformation(restoredInfo);
+            const isActive = typeof restoredInfo.entitlements.active[ENTITLEMENT_ID] !== 'undefined';
             return isActive;
         } catch (e) {
             console.error('Restore failed:', e);
@@ -96,8 +107,10 @@ export function useSubscription() {
     return {
         isPremium,
         loading,
-        offerings,
-        purchasePremium,
+        customerInfo,
+        purchasePremium,      // Aliased to presentPaywall for backwards compatibility
+        presentPaywall: purchasePremium, // Also export explicitly
+        presentCustomerCenter,
         restorePurchases,
         checkSubscription,
     };

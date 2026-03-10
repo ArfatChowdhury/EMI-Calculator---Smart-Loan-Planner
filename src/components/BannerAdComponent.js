@@ -24,13 +24,15 @@ export default function BannerAdComponent() {
     try {
         const { BannerAd, BannerAdSize, TestIds } = require('react-native-google-mobile-ads');
         return (
-            <BannerAd
-                unitId={AdUnits.banner || TestIds.BANNER}
-                size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
-                requestOptions={{
-                    requestNonPersonalizedAdsOnly: true,
-                }}
-            />
+            <View style={{ alignItems: 'center', justifyContent: 'center', width: '100%', marginTop: 10 }}>
+                <BannerAd
+                    unitId={AdUnits.banner || TestIds.BANNER}
+                    size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+                    requestOptions={{
+                        requestNonPersonalizedAdsOnly: true,
+                    }}
+                />
+            </View>
         );
     } catch (e) {
         console.warn('AdMob not available', e);
