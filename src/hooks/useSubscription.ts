@@ -3,8 +3,16 @@ import { Platform } from 'react-native';
 import Purchases, { CustomerInfo, LOG_LEVEL } from 'react-native-purchases';
 import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 
-// Using the provided API key
-const REVENUECAT_API_KEY = 'test_EEJKeYnAWNGVBwfhUEvZSoRlhaB';
+// RevenueCat API Keys
+const REVENUECAT_KEYS = {
+    android: 'goog_kcoZDmRPmsEDxduYPCboojqqXeN',
+    ios: 'appl_placeholder', // Add your iOS key here when ready
+};
+
+const REVENUECAT_API_KEY = Platform.select({
+    android: REVENUECAT_KEYS.android,
+    ios: REVENUECAT_KEYS.ios,
+}) || REVENUECAT_KEYS.android;
 
 // This must match entitlement ID in RevenueCat dashboard
 const ENTITLEMENT_ID = 'Limners Pro';
