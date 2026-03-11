@@ -1,12 +1,21 @@
 {
   "expo": {
-    "name": "EMI",
+    "name": "EMI Calculator",
     "slug": "emi",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "emicalculatorsmartloanplanner",
     "userInterfaceStyle": "dark",
+    "updates": {
+      "url": "https://u.expo.dev/emi",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.naim.emicalculator"
@@ -50,6 +59,10 @@
       "expo-font",
       "expo-web-browser"
     ],
+    "extra": {
+      "privacyPolicyUrl": "https://limnersapp.web.app/emi-calculator/privacy",
+      "termsOfServiceUrl": "https://limnersapp.web.app/emi-calculator/terms"
+    },
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true

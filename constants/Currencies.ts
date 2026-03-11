@@ -12,6 +12,23 @@ export const Currencies = [
     { code: 'CNY', symbol: '¥', name: 'Chinese Yuan', locale: 'zh-CN' },
     { code: 'AED', symbol: 'د.إ', name: 'UAE Dirham', locale: 'ar-AE' },
     { code: 'SAR', symbol: '﷼', name: 'Saudi Riyal', locale: 'ar-SA' },
+    { code: 'PKR', symbol: '₨', name: 'Pakistani Rupee', locale: 'en-PK' },
+    { code: 'LKR', symbol: 'Rs', name: 'Sri Lankan Rupee', locale: 'en-LK' },
+    { code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit', locale: 'en-MY' },
+    { code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah', locale: 'id-ID' },
+    { code: 'THB', symbol: '฿', name: 'Thai Baht', locale: 'th-TH' },
+    { code: 'NZD', symbol: '$', name: 'NZ Dollar', locale: 'en-NZ' },
+    { code: 'HKD', symbol: '$', name: 'HK Dollar', locale: 'en-HK' },
+    { code: 'ZAR', symbol: 'R', name: 'SA Rand', locale: 'en-ZA' },
+    { code: 'RUB', symbol: '₽', name: 'Russian Ruble', locale: 'ru-RU' },
+    { code: 'BRL', symbol: 'R$', name: 'Brazilian Real', locale: 'pt-BR' },
+    { code: 'MXN', symbol: '$', name: 'Mexican Peso', locale: 'es-MX' },
+    { code: 'TRY', symbol: '₺', name: 'Turkish Lira', locale: 'tr-TR' },
+    { code: 'KRW', symbol: '₩', name: 'South Korean Won', locale: 'ko-KR' },
+    { code: 'PHP', symbol: '₱', name: 'Philippine Peso', locale: 'en-PH' },
+    { code: 'VND', symbol: '₫', name: 'Vietnamese Dong', locale: 'vi-VN' },
+    { code: 'ILS', symbol: '₪', name: 'Israeli Shekel', locale: 'he-IL' },
+    { code: 'PLN', symbol: 'zł', name: 'Polish Zloty', locale: 'pl-PL' },
 ];
 
 export default Currencies;

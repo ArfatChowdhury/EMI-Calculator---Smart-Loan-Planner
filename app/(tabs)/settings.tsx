@@ -1,6 +1,8 @@
 import { Colors, SHADOW } from '@/constants/Colors';
 import { Currencies } from '@/constants/Currencies';
 import BannerAdComponent from '@/src/components/BannerAdComponent';
+import CompanyLogo from '@/src/components/CompanyLogo';
+import { useLoanContext } from '@/src/context/LoanContext';
 import { useSettings } from '@/src/hooks/useSettings';
 import { useSubscription } from '@/src/hooks/useSubscription';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,6 +27,8 @@ export default function SettingsScreen() {
     const { settings, updateSettings } = useSettings();
     const theme = Colors[(settings.theme || 'light') as keyof typeof Colors];
     const [currencyModalVisible, setCurrencyModalVisible] = useState(false);
+    const [loanTypeModalVisible, setLoanTypeModalVisible] = useState(false);
+    const [tenureModalVisible, setTenureModalVisible] = useState(false);
     const [feedbackModalVisible, setFeedbackModalVisible] = useState(false);
     const [feedbackType, setFeedbackType] = useState('Suggestion');
     const [feedbackText, setFeedbackText] = useState('');
@@ -37,6 +41,16 @@ export default function SettingsScreen() {
     const handleSelectCurrency = (code: string) => {
         updateSettings({ currency: code });
         setCurrencyModalVisible(false);
+    };
+
+    const handleSelectLoanType = (type: string) => {
+        updateSettings({ loanType: type });
+        setLoanTypeModalVisible(false);
+    };
+
+    const handleSelectTenureUnit = (unit: string) => {
+        updateSettings({ tenureUnit: unit });
+        setTenureModalVisible(false);
     };
 
     const { isPremium, purchasePremium, restorePurchases, presentCustomerCenter } = useSubscription();
@@ -79,6 +93,42 @@ export default function SettingsScreen() {
         setFeedbackText('');
     };
 
+    const { clearAllData } = useLoanContext();
+
+    const handleResetData = () => {
+        Alert.alert(
+            'Reset All Data',
+            'Are you sure you want to clear all your saved loans and settings? This action cannot be undone.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { 
+                    text: 'Reset', 
+                    style: 'destructive', 
+                    onPress: async () => {
+                        const success = await clearAllData();
+                        if (success) {
+                            Alert.alert('Success', 'All your data has been cleared.');
+                        } else {
+                            Alert.alert('Error', 'Failed to clear data.');
+                        }
+                    } 
+                }
+            ]
+        );
+    };
+
+    const handleOpenPrivacy = () => {
+        Linking.openURL('https://limnersapp.web.app/emi-calculator/privacy').catch(err => {
+            Alert.alert('Error', 'Could not open Privacy Policy link.');
+        });
+    };
+
+    const handleOpenTerms = () => {
+        Linking.openURL('https://limnersapp.web.app/emi-calculator/terms').catch(err => {
+            Alert.alert('Error', 'Could not open Terms of Service link.');
+        });
+    };
+
     const renderItem = (icon: any, label: string, value: string, onPress: () => void, isLast = false) => (
         <TouchableOpacity
             style={[styles.item, !isLast && { borderBottomWidth: 1, borderBottomColor: theme.border }]}
@@ -108,8 +158,8 @@ export default function SettingsScreen() {
                 <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Preferences</Text>
                 <View style={[styles.settingsCard, { backgroundColor: theme.card, borderColor: theme.border }, SHADOW.sm]}>
                     {renderItem('cash-outline', 'Currency', `${currentCurrency.name}`, () => setCurrencyModalVisible(true))}
-                    {renderItem('calculator-outline', 'Default Loan Type', settings.loanType === 'reducing' ? 'Reducing' : 'Flat', () => { })}
-                    {renderItem('calendar-outline', 'Tenure Unit', settings.tenureUnit === 'months' ? 'Months' : 'Years', () => { }, true)}
+                    {renderItem('calculator-outline', 'Default Loan Type', settings.loanType === 'reducing' ? 'Reducing' : 'Flat', () => setLoanTypeModalVisible(true))}
+                    {renderItem('calendar-outline', 'Tenure Unit', settings.tenureUnit === 'months' ? 'Months' : 'Years', () => setTenureModalVisible(true), true)}
                 </View>
 
                 <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Appearance</Text>
@@ -171,17 +221,28 @@ export default function SettingsScreen() {
                 <View style={[styles.settingsCard, { backgroundColor: theme.card, borderColor: theme.border }, SHADOW.sm]}>
                     {renderItem('chatbubble-ellipses-outline', 'Send Feedback', '', () => setFeedbackModalVisible(true))}
                     {renderItem('information-circle-outline', 'Version', '1.0.0', () => { })}
-                    {renderItem('shield-checkmark-outline', 'Privacy Policy', '', () => { })}
-                    {renderItem('document-text-outline', 'Terms of Service', '', () => { }, true)}
+                    {renderItem('shield-checkmark-outline', 'Privacy Policy', '', handleOpenPrivacy)}
+                    {renderItem('document-text-outline', 'Terms of Service', '', handleOpenTerms, true)}
                 </View>
 
-                <TouchableOpacity style={[styles.resetBtn, { backgroundColor: `${theme.expense}10` }]} activeOpacity={0.7} onPress={() => Alert.alert('Reset', 'Are you sure?', [{ text: 'Cancel' }, { text: 'Reset', style: 'destructive' }])}>
-                    <Ionicons name="trash-outline" size={20} color={theme.expense} style={{ marginRight: 8 }} />
-                    <Text style={[styles.resetBtnText, { color: theme.expense }]}>Reset All Data</Text>
+                <TouchableOpacity
+                    style={[styles.resetBtn, { backgroundColor: `${theme.danger}15` }]}
+                    onPress={handleResetData}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons name="trash-outline" size={20} color={theme.danger} style={{ marginRight: 8 }} />
+                    <Text style={[styles.resetBtnText, { color: theme.danger }]}>Reset All Data</Text>
                 </TouchableOpacity>
 
-                <View style={{ height: 20 }} />
-                <BannerAdComponent isPremium={isPremium} />
+                <View style={styles.footerBranding}>
+                    <BannerAdComponent isPremium={isPremium} />
+                    <CompanyLogo
+                        variant={settings.theme === 'dark' ? 'white' : 'black'}
+                        width={300}
+                        height={100}
+                    />
+                    <Text style={[styles.footerVersion, { color: theme.textSecondary }]}>Version 1.0.0</Text>
+                </View>
             </ScrollView>
 
             <Modal
@@ -222,6 +283,72 @@ export default function SettingsScreen() {
                                 </TouchableOpacity>
                             )}
                         />
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Loan Type Modal */}
+            <Modal
+                visible={loanTypeModalVisible}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setLoanTypeModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+                        <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+                            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Default Loan Type</Text>
+                            <TouchableOpacity onPress={() => setLoanTypeModalVisible(false)} style={[styles.doneBtn, { backgroundColor: `${theme.primary}10` }]}>
+                                <Text style={[styles.closeBtn, { color: theme.primary }]}>Done</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <View style={{ padding: 20 }}>
+                            {['reducing', 'flat'].map((type) => (
+                                <TouchableOpacity
+                                    key={type}
+                                    style={[styles.currencyItem, { borderBottomColor: theme.border }]}
+                                    onPress={() => handleSelectLoanType(type)}
+                                >
+                                    <Text style={[styles.currencyName, { color: theme.textPrimary, textTransform: 'capitalize' }]}>{type}</Text>
+                                    {settings.loanType === type && (
+                                        <Ionicons name="checkmark-circle" size={24} color={theme.primary} />
+                                    )}
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Tenure Unit Modal */}
+            <Modal
+                visible={tenureModalVisible}
+                animationType="slide"
+                transparent={true}
+                onRequestClose={() => setTenureModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+                        <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+                            <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>Default Tenure Unit</Text>
+                            <TouchableOpacity onPress={() => setTenureModalVisible(false)} style={[styles.doneBtn, { backgroundColor: `${theme.primary}10` }]}>
+                                <Text style={[styles.closeBtn, { color: theme.primary }]}>Done</Text>
+                            </TouchableOpacity>
+                        </View>
+                        <View style={{ padding: 20 }}>
+                            {['months', 'years'].map((unit) => (
+                                <TouchableOpacity
+                                    key={unit}
+                                    style={[styles.currencyItem, { borderBottomColor: theme.border }]}
+                                    onPress={() => handleSelectTenureUnit(unit)}
+                                >
+                                    <Text style={[styles.currencyName, { color: theme.textPrimary, textTransform: 'capitalize' }]}>{unit}</Text>
+                                    {settings.tenureUnit === unit && (
+                                        <Ionicons name="checkmark-circle" size={24} color={theme.primary} />
+                                    )}
+                                </TouchableOpacity>
+                            ))}
+                        </View>
                     </View>
                 </View>
             </Modal>
@@ -517,5 +644,16 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 16,
         fontWeight: '800',
+    },
+    footerBranding: {
+        alignItems: 'center',
+        paddingTop: 40,
+        paddingBottom: 20,
+        opacity: 0.6,
+    },
+    footerVersion: {
+        fontSize: 12,
+        fontWeight: '600',
+        marginTop: 8,
     },
 });

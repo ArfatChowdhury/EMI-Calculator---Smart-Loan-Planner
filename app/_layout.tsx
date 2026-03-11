@@ -1,4 +1,5 @@
-import LimnerLogo from '@/src/components/LimnerLogo';
+import CompanyLogo from '@/src/components/CompanyLogo';
+import RateUsModal from '@/src/components/RateUsModal';
 import { LoanProvider } from '@/src/context/LoanContext';
 import { SettingsProvider } from '@/src/context/SettingsContext';
 import { useSubscription } from '@/src/hooks/useSubscription';
@@ -6,8 +7,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import * as Updates from 'expo-updates';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Image, Linking, StyleSheet, View } from 'react-native';
+import { Animated, Image, StyleSheet, Text as RNText, View } from 'react-native';
 import 'react-native-reanimated';
 
 SplashScreen.preventAutoHideAsync();
@@ -52,11 +54,35 @@ function CustomSplashScreen({ onComplete }: { onComplete: () => void }) {
         source={require('@/assets/images/splashicon.png')}
         style={{ width: 140, height: 140, resizeMode: 'contain' }}
       />
-      <View style={{ position: 'absolute', bottom: 50, alignItems: 'center' }}>
-        <LimnerLogo width={120} height={40} color="#FFFFFF" />
+      <View style={{ marginTop: 20 }}>
+        <CompanyLogo variant="white" width={220} height={70} />
       </View>
     </Animated.View>
   );
+}
+
+function OTAUpdateHandler() {
+  useEffect(() => {
+    async function onFetchUpdateAsync() {
+      try {
+        const update = await Updates.checkForUpdateAsync();
+        if (update.isAvailable) {
+          await Updates.fetchUpdateAsync();
+          // Force reload to apply update silently if possible or on next launch
+          // Since user wants "auto update", we can reload if they just opened the app
+          await Updates.reloadAsync();
+        }
+      } catch (error) {
+        // Silent error for OTA
+      }
+    }
+
+    if (!__DEV__) {
+      onFetchUpdateAsync();
+    }
+  }, []);
+
+  return null;
 }
 
 // Initialize AdMob in production only
@@ -130,6 +156,8 @@ export default function RootLayout() {
 
   const popupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [rateModalVisible, setRateModalVisible] = useState(false);
+
   useEffect(() => {
     const checkRateUs = async () => {
       try {
@@ -145,32 +173,10 @@ export default function RootLayout() {
           return;
         }
 
-        // Wait 40 seconds before showing the prompt
+        // Wait 45 seconds before showing the prompt
         popupTimer.current = setTimeout(() => {
-          Alert.alert(
-            'Enjoying Limners?',
-            'Your feedback helps us improve! Would you mind taking a moment to rate us on the Play Store?',
-            [
-              {
-                text: 'Later',
-                onPress: () => AsyncStorage.setItem('last_rate_prompt', now.toString()),
-                style: 'cancel',
-              },
-              {
-                text: 'Rate Now',
-                onPress: () => {
-                  AsyncStorage.setItem('has_rated_app', 'true');
-                  // For Android Play Store URL - REPLACE WITH ACTUAL PACKAGE NAME ONCE PUBLISHED
-                  Linking.openURL('market://details?id=com.naim.emicalculator').catch(() => {
-                    Linking.openURL('https://play.google.com/store/apps/details?id=com.naim.emicalculator');
-                  });
-                },
-                style: 'default',
-              },
-            ],
-            { cancelable: false }
-          );
-        }, 40000); // 40 seconds
+          setRateModalVisible(true);
+        }, 45000);
       } catch (e) {
         console.warn('Rate us prompt error:', e);
       }
@@ -188,7 +194,8 @@ export default function RootLayout() {
   return (
     <SettingsProvider>
       <LoanProvider>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, backgroundColor: '#121212' }}>
+          <OTAUpdateHandler />
           <Stack
             screenOptions={{
               headerShown: false,
@@ -197,9 +204,14 @@ export default function RootLayout() {
           >
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           </Stack>
-          <StatusBar style="auto" />
+          <StatusBar style="light" />
 
           {!appReady && <CustomSplashScreen onComplete={() => setAppReady(true)} />}
+
+          <RateUsModal
+            visible={rateModalVisible}
+            onClose={() => setRateModalVisible(false)}
+          />
         </View>
       </LoanProvider>
     </SettingsProvider>

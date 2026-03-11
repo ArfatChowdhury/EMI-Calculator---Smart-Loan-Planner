@@ -54,12 +54,25 @@ export const LoanProvider = ({ children }) => {
         }
     };
 
+    const clearAllData = async () => {
+        try {
+            await AsyncStorage.removeItem(LOANS_STORAGE_KEY);
+            setLoans([]);
+            setActiveLoan(null);
+            return true;
+        } catch (error) {
+            console.error('Failed to clear data:', error);
+            return false;
+        }
+    };
+
     return (
         <LoanContext.Provider value={{
             loans,
             loading,
             saveLoan,
             deleteLoan,
+            clearAllData,
             refreshLoans: loadLoans,
             activeLoan,
             setActiveLoan

@@ -2,7 +2,8 @@ import { Colors, SHADOW } from '@/constants/Colors';
 import { Currencies } from '@/constants/Currencies';
 import BannerAdComponent from '@/src/components/BannerAdComponent';
 import DonutChart from '@/src/components/DonutChart';
-import LimnerLogo from '@/src/components/LimnerLogo';
+import PdfGenerationModal from '@/src/components/PdfGenerationModal';
+import SaveSuccessModal from '@/src/components/SaveSuccessModal';
 import SliderInput from '@/src/components/SliderInput';
 import { useLoanContext } from '@/src/context/LoanContext';
 import { useSettings } from '@/src/hooks/useSettings';
@@ -14,12 +15,14 @@ import {
     calculateReducingEMI,
     generateAmortizationSchedule
 } from '@/src/utils/emiCalculations';
-import { generateLoanPDF, showPdfInterstitial } from '@/src/utils/pdfGenerator';
+import { generateLoanPDF } from '@/src/utils/pdfGenerator';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
     Alert,
     LayoutChangeEvent,
+    RefreshControl,
     ScrollView,
     StyleSheet,
     Text,
@@ -63,13 +66,41 @@ export default function CalculatorScreen() {
     const [amount, setAmount] = useState<number>(500000);
     const [rate, setRate] = useState<number>(9.5);
     const [tenure, setTenure] = useState<number>(60);
+    const [refreshing, setRefreshing] = useState(false);
     const [tenureType, setTenureType] = useState<'months' | 'years'>('months');
     const [loanType, setLoanType] = useState<'reducing' | 'flat'>('reducing');
 
     const [addPrepayment, setAddPrepayment] = useState<boolean>(false);
     const [extraMonthly, setExtraMonthly] = useState<number>(5000);
 
-    const [results, setResults] = useState<CalculationResults | null>(null);
+    const [results, setResults] = useState<any>(null);
+    const [saveModalVisible, setSaveModalVisible] = useState(false);
+    const [pdfModalVisible, setPdfModalVisible] = useState(false);
+    const [pdfExportsToday, setPdfExportsToday] = useState(0);
+
+    const { isPremium, purchasePremium } = useSubscription();
+
+    useEffect(() => {
+        checkPdfLimit();
+    }, []);
+
+    const checkPdfLimit = async () => {
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const storedDate = await AsyncStorage.getItem('@pdf_export_date');
+            const storedCount = await AsyncStorage.getItem('@pdf_export_count');
+
+            if (storedDate === today) {
+                setPdfExportsToday(parseInt(storedCount || '0'));
+            } else {
+                await AsyncStorage.setItem('@pdf_export_date', today);
+                await AsyncStorage.setItem('@pdf_export_count', '0');
+                setPdfExportsToday(0);
+            }
+        } catch (e) {
+            console.error('Failed to check PDF limit', e);
+        }
+    };
 
     // Glow animation for EMI
     const glowAnim = useSharedValue(1);
@@ -143,12 +174,29 @@ export default function CalculatorScreen() {
         });
 
         // Auto-scroll to results smoothly
+        // If results just appeared, onLayout might not have fired yet. 
+        // We'll scroll after a slightly longer delay or check positions.
         setTimeout(() => {
-            scrollRef.current?.scrollTo({
-                y: resultsRef.current,
-                animated: true,
-            });
-        }, 100);
+            if (resultsRef.current > 0) {
+                scrollRef.current?.scrollTo({
+                    y: resultsRef.current - 20, // offset slightly
+                    animated: true,
+                });
+            } else {
+                // Fallback scroll to end if layout hasn't updated
+                scrollRef.current?.scrollToEnd({ animated: true });
+            }
+        }, 150);
+    };
+
+    const handleRefresh = () => {
+        setRefreshing(true);
+        setAmount(500000);
+        setRate(9.5);
+        setTenure(60);
+        setTenureType('months');
+        setResults(null);
+        setTimeout(() => setRefreshing(false), 800);
     };
 
     const handleSave = async () => {
@@ -165,19 +213,37 @@ export default function CalculatorScreen() {
                 loanType: loanType,
             });
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            Alert.alert('Success', 'Loan saved to My Loans');
+            setSaveModalVisible(true);
         } catch (error) {
             Alert.alert('Error', 'Failed to save loan');
         }
     };
 
-    const { isPremium } = useSubscription();
-
     const handleExportPDF = async () => {
         if (!results) return;
 
+        if (!isPremium && pdfExportsToday >= 3) {
+            Alert.alert(
+                '🔥 Daily Limit Reached',
+                'You have reached your limit of 3 free PDF exports for today. Upgrade to PRO for unlimited exports and more!',
+                [
+                    { text: 'Not Now', style: 'cancel' },
+                    { text: 'Go PRO', onPress: purchasePremium }
+                ]
+            );
+            return;
+        }
+
+        setPdfModalVisible(true);
+    };
+
+    const handlePdfComplete = async () => {
+        if (!results) {
+            setPdfModalVisible(false);
+            return;
+        }
+        setPdfModalVisible(false);
         try {
-            await showPdfInterstitial(isPremium);
             const actualTenureMonths = tenureType === 'years' ? tenure * 12 : tenure;
             const schedule = generateAmortizationSchedule(amount, rate, actualTenureMonths);
 
@@ -189,6 +255,13 @@ export default function CalculatorScreen() {
                 totalInterest: results.totalInterest,
                 totalPayable: results.totalPayable
             }, schedule);
+
+            // Increment PDF count if not premium
+            if (!isPremium) {
+                const newCount = pdfExportsToday + 1;
+                setPdfExportsToday(newCount);
+                await AsyncStorage.setItem('@pdf_export_count', newCount.toString());
+            }
 
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } catch (error) {
@@ -252,15 +325,29 @@ export default function CalculatorScreen() {
 
     return (
         <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
+            <View style={styles.header}>
+                <View style={styles.headerTextContent}>
+                    <Text style={[styles.title, { color: theme.textPrimary }]}>EMI Calculator</Text>
+                    <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Smart Loan Planner</Text>
+                </View>
+                <View style={[styles.badge, { backgroundColor: `${theme.primary}20`, position: 'absolute', right: 20, top: 12 }]}>
+                    <Text style={[styles.badgeText, { color: theme.primary }]}>PRO</Text>
+                </View>
+            </View>
+
             <ScrollView
                 ref={scrollRef}
                 contentContainerStyle={styles.container}
                 showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={handleRefresh}
+                        tintColor={theme.primary}
+                        colors={[theme.primary]}
+                    />
+                }
             >
-                <View style={styles.header}>
-                    <LimnerLogo width={160} height={50} color={theme.textPrimary} />
-                    <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Plan your loans precisely</Text>
-                </View>
 
                 <View style={[styles.inputContainer, { backgroundColor: theme.card, borderColor: theme.border }, SHADOW.sm]}>
                     <SliderInput
@@ -454,6 +541,16 @@ export default function CalculatorScreen() {
                 <View style={{ height: 20 }} />
                 <BannerAdComponent isPremium={isPremium} />
             </ScrollView>
+
+            <SaveSuccessModal
+                visible={saveModalVisible}
+                onClose={() => setSaveModalVisible(false)}
+            />
+
+            <PdfGenerationModal
+                visible={pdfModalVisible}
+                onComplete={handlePdfComplete}
+            />
         </SafeAreaView>
     );
 }
@@ -463,20 +560,48 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     container: {
-        padding: 20,
+        paddingHorizontal: 20,
         paddingBottom: 40,
     },
     header: {
-        marginBottom: 24,
+        paddingHorizontal: 20,
+        paddingTop: 12,
+        marginBottom: 8,
+    },
+    headerTextContent: {
+        marginTop: 0,
+    },
+    headerTop: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    headerBrand: {
+        fontSize: 18,
+        fontWeight: '900',
+        letterSpacing: 1,
+        textTransform: 'uppercase',
+    },
+    badge: {
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 8,
+    },
+    badgeText: {
+        fontSize: 10,
+        fontWeight: '900',
     },
     title: {
-        fontSize: 28,
-        fontWeight: '800',
+        fontSize: 32,
+        fontWeight: '900',
+        letterSpacing: -0.5,
     },
     subtitle: {
-        fontSize: 16,
-        marginTop: 4,
-        fontWeight: '600',
+        fontSize: 14,
+        marginTop: 2,
+        fontWeight: '700',
+        opacity: 0.8,
     },
     resultBox: {
         borderRadius: 24,

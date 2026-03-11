@@ -4,7 +4,9 @@ import { Text, View } from 'react-native';
 // Only import admob in production build
 const IS_DEV = __DEV__;
 
-export default function BannerAdComponent() {
+export default function BannerAdComponent({ isPremium }) {
+    if (isPremium) return null;
+    
     if (IS_DEV) {
         // Return fake banner during development
         return (
