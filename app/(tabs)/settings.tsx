@@ -234,8 +234,7 @@ export default function SettingsScreen() {
                     <Text style={[styles.resetBtnText, { color: theme.danger }]}>Reset All Data</Text>
                 </TouchableOpacity>
 
-                <View style={styles.footerBranding}>
-                    <BannerAdComponent isPremium={isPremium} />
+                <View style={[styles.footerBranding, { paddingBottom: 60 }]}>
                     <CompanyLogo
                         variant={settings.theme === 'dark' ? 'white' : 'black'}
                         width={300}
@@ -244,6 +243,10 @@ export default function SettingsScreen() {
                     <Text style={[styles.footerVersion, { color: theme.textSecondary }]}>Version 1.0.0</Text>
                 </View>
             </ScrollView>
+
+            <View style={[styles.bottomAdContainer, { borderTopColor: theme.border }]}>
+                <BannerAdComponent isPremium={isPremium} />
+            </View>
 
             <Modal
                 visible={currencyModalVisible}
@@ -427,6 +430,14 @@ const styles = StyleSheet.create({
     container: {
         padding: 20,
         paddingBottom: 40,
+    },
+    bottomAdContainer: {
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#121212',
+        paddingVertical: 4,
+        borderTopWidth: 0.5,
     },
     title: {
         fontSize: 28,

@@ -106,15 +106,14 @@ export default function RootLayout() {
   const { isPremium } = useSubscription();
   const [appReady, setAppReady] = useState(false);
 
-  const showLaunchInterstitial = async (isPremium: boolean) => {
+  const interstitialRef = useRef<any>(null);
+
+  const preloadLaunchInterstitial = async (isPremium: boolean) => {
     // Skip in dev mode or for premium users
     if (__DEV__ || isPremium) return;
 
     try {
-      const {
-        InterstitialAd,
-        AdEventType,
-      } = require('react-native-google-mobile-ads');
+      const { InterstitialAd, AdEventType } = require('react-native-google-mobile-ads');
       const { AdUnits } = require('@/src/constants/adUnits');
 
       // Check if shown in last 24 hours
@@ -132,8 +131,7 @@ export default function RootLayout() {
       );
 
       interstitial.addAdEventListener(AdEventType.LOADED, () => {
-        interstitial.show();
-        AsyncStorage.setItem('last_interstitial', now.toString());
+        interstitialRef.current = interstitial;
       });
 
       interstitial.addAdEventListener(
@@ -145,14 +143,36 @@ export default function RootLayout() {
 
       interstitial.load();
     } catch (e) {
-      console.warn('Interstitial error:', e);
+      console.warn('Interstitial preload error:', e);
     }
   };
 
-  // Call inside useEffect in root component:
+  const showPreloadedInterstitial = async () => {
+    if (interstitialRef.current) {
+      try {
+        interstitialRef.current.show();
+        await AsyncStorage.setItem('last_interstitial', Date.now().toString());
+        interstitialRef.current = null;
+      } catch (e) {
+        console.warn('Error showing preloaded interstitial:', e);
+      }
+    }
+  };
+
+  // Preload on mount or when premium status changes
   useEffect(() => {
-    showLaunchInterstitial(isPremium);
+    preloadLaunchInterstitial(isPremium);
   }, [isPremium]);
+
+  // Show ad slightly after app is ready and splash is gone
+  useEffect(() => {
+    if (appReady && !isPremium) {
+      const timer = setTimeout(() => {
+        showPreloadedInterstitial();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [appReady, isPremium]);
 
   const popupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 

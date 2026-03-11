@@ -173,9 +173,11 @@ export default function CompareScreen() {
                         {renderComparisonCard('Total Payable', results.loan1.totalPayable, results.loan2.totalPayable)}
                     </Animated.View>
                 )}
-                <View style={{ height: 20 }} />
-                <BannerAdComponent isPremium={isPremium} />
             </ScrollView>
+
+            <View style={[styles.bottomAdContainer, { borderTopColor: theme.border }]}>
+                <BannerAdComponent isPremium={isPremium} />
+            </View>
         </SafeAreaView>
     );
 }
@@ -186,7 +188,15 @@ const styles = StyleSheet.create({
     },
     container: {
         padding: 20,
-        paddingBottom: 40,
+        paddingBottom: 80,
+    },
+    bottomAdContainer: {
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#121212',
+        paddingVertical: 4,
+        borderTopWidth: 0.5,
     },
     header: {
         marginBottom: 24,

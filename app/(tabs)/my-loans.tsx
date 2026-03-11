@@ -38,7 +38,8 @@ export default function MyLoansScreen() {
     const { isPremium } = useSubscription();
 
     const listDataWithAds = (loans as Loan[]).flatMap((item, index) => {
-        if ((index + 1) % 3 === 0) {
+        // Show native ad after 2nd loan, then every 4 loans
+        if (index === 1 || (index > 1 && (index - 1) % 4 === 0)) {
             return [item, { type: 'AD', id: `ad_${index}` }];
         }
         return [item];
@@ -127,6 +128,8 @@ export default function MyLoansScreen() {
                     ListEmptyComponent={renderEmptyState}
                     showsVerticalScrollIndicator={false}
                 />
+            </View>
+            <View style={[styles.bottomAdContainer, { borderTopColor: theme.border }]}>
                 <BannerAdComponent isPremium={isPremium} />
             </View>
         </SafeAreaView>
@@ -151,6 +154,18 @@ const styles = StyleSheet.create({
         fontSize: 28,
         fontWeight: '800',
         marginBottom: 20,
+    },
+    bottomAdContainer: {
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#121212',
+        paddingVertical: 4,
+        borderTopWidth: 0.5,
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
     },
     summarySection: {
         marginBottom: 24,
@@ -190,7 +205,7 @@ const styles = StyleSheet.create({
         fontWeight: '800',
     },
     listContent: {
-        paddingBottom: 40,
+        paddingBottom: 80, // Extra padding for the fixed ad
     },
     emptyContainer: {
         flex: 1,

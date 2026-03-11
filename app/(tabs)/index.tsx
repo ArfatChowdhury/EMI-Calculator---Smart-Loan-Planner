@@ -219,6 +219,34 @@ export default function CalculatorScreen() {
         }
     };
 
+    const interstitialRef = useRef<any>(null);
+
+    const preloadPdfAd = async () => {
+        if (__DEV__ || isPremium) return;
+        try {
+            const { InterstitialAd, AdEventType } = require('react-native-google-mobile-ads');
+            const { AdUnits } = require('@/src/constants/adUnits');
+
+            const interstitial = InterstitialAd.createForAdRequest(AdUnits.interstitial, {
+                requestNonPersonalizedAdsOnly: true,
+            });
+
+            interstitial.addAdEventListener(AdEventType.LOADED, () => {
+                interstitialRef.current = interstitial;
+            });
+
+            interstitial.load();
+        } catch (e) {
+            console.warn('PDF ad preload error:', e);
+        }
+    };
+
+    useEffect(() => {
+        if (results) {
+            preloadPdfAd();
+        }
+    }, [results]);
+
     const handleExportPDF = async () => {
         if (!results) return;
 
@@ -234,7 +262,17 @@ export default function CalculatorScreen() {
             return;
         }
 
-        setPdfModalVisible(true);
+        // Show preloaded ad if available
+        if (interstitialRef.current) {
+            const { AdEventType } = require('react-native-google-mobile-ads');
+            interstitialRef.current.addAdEventListener(AdEventType.CLOSED, () => {
+                setPdfModalVisible(true);
+                interstitialRef.current = null;
+            });
+            interstitialRef.current.show();
+        } else {
+            setPdfModalVisible(true);
+        }
     };
 
     const handlePdfComplete = async () => {
@@ -538,9 +576,11 @@ export default function CalculatorScreen() {
                     </View>
                 )}
 
-                <View style={{ height: 20 }} />
-                <BannerAdComponent isPremium={isPremium} />
             </ScrollView>
+
+            <View style={[styles.bottomAdContainer, { borderTopColor: theme.border }]}>
+                <BannerAdComponent isPremium={isPremium} />
+            </View>
 
             <SaveSuccessModal
                 visible={saveModalVisible}
@@ -664,6 +704,14 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         padding: 20,
         borderWidth: 1,
+    },
+    bottomAdContainer: {
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#121212',
+        paddingVertical: 4,
+        borderTopWidth: 0.5,
     },
     divider: {
         height: 1,
