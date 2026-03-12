@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "EMI Calculator",
+    "name": "EMI-Calculator",
     "slug": "emi",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -57,7 +57,24 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "newArchEnabled": false,
+            "abiFilters": [
+              "arm64-v8a",
+              "x86_64"
+            ],
+            "packagingOptions": {
+              "pickFirst": [
+                "**/libreactnative.so"
+              ]
+            }
+          }
+        }
+      ]
     ],
     "extra": {
       "privacyPolicyUrl": "https://limnersapp.web.app/emi-calculator/privacy",
