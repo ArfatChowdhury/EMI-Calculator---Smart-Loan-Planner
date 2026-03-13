@@ -40,9 +40,9 @@
           "image": "./assets/images/splashicon.png",
           "imageWidth": 140,
           "resizeMode": "contain",
-          "backgroundColor": "#121212",
+          "backgroundColor": "#161920",
           "dark": {
-            "backgroundColor": "#121212"
+            "backgroundColor": "#161920"
           }
         }
       ],
@@ -78,8 +78,8 @@
       ]
     ],
     "extra": {
-      "privacyPolicyUrl": "https://limnersapp.web.app/emi-calculator/privacy",
-      "termsOfServiceUrl": "https://limnersapp.web.app/emi-calculator/terms"
+      "privacyPolicyUrl": "https://emi-calculator-smart-loan-website.vercel.app/",
+      "termsOfServiceUrl": "https://emi-calculator-smart-loan-website.vercel.app/terms"
     },
     "experiments": {
       "typedRoutes": true,

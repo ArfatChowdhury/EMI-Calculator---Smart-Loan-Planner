@@ -118,13 +118,13 @@ export default function SettingsScreen() {
     };
 
     const handleOpenPrivacy = () => {
-        Linking.openURL('https://limnersapp.web.app/emi-calculator/privacy').catch(err => {
+        Linking.openURL('https://emi-calculator-smart-loan-website.vercel.app/').catch(err => {
             Alert.alert('Error', 'Could not open Privacy Policy link.');
         });
     };
 
     const handleOpenTerms = () => {
-        Linking.openURL('https://limnersapp.web.app/emi-calculator/terms').catch(err => {
+        Linking.openURL('https://emi-calculator-smart-loan-website.vercel.app/terms').catch(err => {
             Alert.alert('Error', 'Could not open Terms of Service link.');
         });
     };
