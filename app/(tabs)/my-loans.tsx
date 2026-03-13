@@ -125,12 +125,9 @@ export default function MyLoansScreen() {
                         );
                     }}
                     contentContainerStyle={styles.listContent}
-                    ListEmptyComponent={renderEmptyState}
                     showsVerticalScrollIndicator={false}
                 />
-            </View>
-            <View style={[styles.bottomAdContainer, { borderTopColor: theme.border }]}>
-                <BannerAdComponent isPremium={isPremium} />
+                {loans.length > 0 && <BannerAdComponent isPremium={isPremium} />}
             </View>
         </SafeAreaView>
     );
@@ -154,18 +151,6 @@ const styles = StyleSheet.create({
         fontSize: 28,
         fontWeight: '800',
         marginBottom: 20,
-    },
-    bottomAdContainer: {
-        width: '100%',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#121212',
-        paddingVertical: 4,
-        borderTopWidth: 0.5,
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
     },
     summarySection: {
         marginBottom: 24,

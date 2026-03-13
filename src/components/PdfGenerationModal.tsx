@@ -1,95 +1,95 @@
-import { Colors, SHADOW } from '@/constants/Colors';
-import { useSettings } from '@/src/hooks/useSettings';
+import { AdUnits } from '@/src/constants/adUnits';
 import { useSubscription } from '@/src/hooks/useSubscription';
-import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
-import {
-    Animated,
-    Modal,
-    StyleSheet,
-    Text,
-    View,
-} from 'react-native';
-import BannerAdComponent from './BannerAdComponent';
+import { Animated, Modal, StyleSheet, Text, View } from 'react-native';
 
-interface PdfGenerationModalProps {
+interface Props {
     visible: boolean;
     onComplete: () => void;
 }
 
-export default function PdfGenerationModal({ visible, onComplete }: PdfGenerationModalProps) {
-    const { settings } = useSettings();
-    const theme = Colors[(settings.theme || 'light') as keyof typeof Colors];
+export default function PdfGenerationModal({ visible, onComplete }: Props) {
     const { isPremium } = useSubscription();
-
     const [progress, setProgress] = useState(0);
-    const [statusText, setStatusText] = useState('Gathering data...');
-    const [showAds, setShowAds] = useState(false);
+    const [step, setStep] = useState(0);
+    const animValue = useRef(new Animated.Value(0)).current;
 
-    const progressAnim = useRef(new Animated.Value(0)).current;
+    const steps = [
+        'Gathering loan data...',
+        'Calculating amortization...',
+        'Generating charts...',
+        'Formatting PDF...',
+        'Almost done...',
+    ];
 
     useEffect(() => {
-        if (visible) {
+        if (!visible) {
             setProgress(0);
-            setStatusText('Gathering data...');
-            setShowAds(true);
-
-            // Animation for progress bar (11 seconds)
-            Animated.timing(progressAnim, {
-                toValue: 1,
-                duration: 11000,
-                useNativeDriver: false,
-            }).start();
-
-            // Status text updates
-            const timers = [
-                setTimeout(() => setStatusText('Generating PDF structure...'), 3000),
-                setTimeout(() => setStatusText('Optimizing tables...'), 6000),
-                setTimeout(() => setStatusText('Finalizing report...'), 9000),
-                setTimeout(() => setShowAds(false), 10000),
-                setTimeout(() => {
-                    onComplete();
-                }, 11000),
-            ];
-
-            return () => {
-                timers.forEach(clearTimeout);
-                progressAnim.setValue(0);
-            };
+            setStep(0);
+            return;
         }
+
+        // Show interstitial ad when PDF modal opens (non-premium only)
+        if (!isPremium && !__DEV__) {
+            try {
+                const { InterstitialAd, AdEventType } = require('react-native-google-mobile-ads');
+                const ad = InterstitialAd.createForAdRequest(AdUnits.interstitial, {
+                    requestNonPersonalizedAdsOnly: true,
+                });
+                ad.addAdEventListener(AdEventType.LOADED, () => ad.show());
+                ad.load();
+            } catch (e) {}
+        }
+
+        // Animate progress over 10 seconds
+        let elapsed = 0;
+        const interval = setInterval(() => {
+            elapsed += 100;
+            const pct = Math.min((elapsed / 10000) * 100, 100);
+            setProgress(pct);
+            setStep(Math.floor((pct / 100) * steps.length));
+            if (pct >= 100) {
+                clearInterval(interval);
+                setTimeout(onComplete, 500);
+            }
+        }, 100);
+
+        return () => clearInterval(interval);
     }, [visible]);
 
-    const width = progressAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: ['0%', '100%'],
-    });
-
     return (
-        <Modal
-            visible={visible}
-            transparent
-            animationType="fade"
-        >
+        <Modal visible={visible} transparent animationType="fade">
             <View style={styles.overlay}>
-                <View style={[styles.content, { backgroundColor: theme.card, borderColor: theme.border }, SHADOW.md]}>
-                    <View style={styles.loadingSection}>
-                        <View style={[styles.iconCircle, { backgroundColor: `${theme.primary}20` }]}>
-                            <Ionicons name="document-text" size={40} color={theme.primary} />
-                        </View>
-                        <Text style={[styles.title, { color: theme.textPrimary }]}>Generating PDF</Text>
-                        <Text style={[styles.statusText, { color: theme.textSecondary }]}>{statusText}</Text>
+                <View style={styles.card}>
+                    <Text style={styles.title}>📄 Generating PDF</Text>
+                    <Text style={styles.step}>{steps[Math.min(step, steps.length - 1)]}</Text>
 
-                        <View style={[styles.progressBackground, { backgroundColor: theme.background }]}>
-                            <Animated.View style={[styles.progressFill, { backgroundColor: theme.primary, width }]} />
-                        </View>
+                    <View style={styles.progressBg}>
+                        <View style={[styles.progressFill, { width: `${progress}%` }]} />
                     </View>
+                    <Text style={styles.pct}>{Math.round(progress)}%</Text>
 
-                    {showAds && !isPremium && (
-                        <View style={styles.adSection}>
-                            <Text style={[styles.adLabel, { color: theme.textSecondary }]}>Showing Ad while you wait (10s)</Text>
-                            <View style={[styles.adContainer, { backgroundColor: theme.background }]}>
-                                <BannerAdComponent isPremium={isPremium} />
-                            </View>
+                    {/* Banner ad inside modal */}
+                    {!isPremium && (
+                        <View style={{ marginTop: 20, width: '100%' }}>
+                            {__DEV__ ? (
+                                <View style={styles.adPlaceholder}>
+                                    <Text style={styles.adText}>[ Ad Banner ]</Text>
+                                </View>
+                            ) : (
+                                (() => {
+                                    try {
+                                        const { BannerAd, BannerAdSize } = require('react-native-google-mobile-ads');
+                                        return (
+                                            <BannerAd
+                                                unitId={AdUnits.banner}
+                                                size={BannerAdSize.BANNER}
+                                                requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+                                            />
+                                        );
+                                    } catch (e) { return null; }
+                                })()
+                            )}
                         </View>
                     )}
                 </View>
@@ -101,66 +101,54 @@ export default function PdfGenerationModal({ visible, onComplete }: PdfGeneratio
 const styles = StyleSheet.create({
     overlay: {
         flex: 1,
-        backgroundColor: '#121212', // Fully opaque for "mock screen" feel
+        backgroundColor: 'rgba(0,0,0,0.7)',
         justifyContent: 'center',
         alignItems: 'center',
         padding: 24,
     },
-    content: {
+    card: {
+        backgroundColor: '#1E1E1E',
+        borderRadius: 24,
+        padding: 28,
         width: '100%',
-        borderRadius: 32,
-        padding: 32,
         alignItems: 'center',
-        borderWidth: 1,
-    },
-    loadingSection: {
-        alignItems: 'center',
-        width: '100%',
-        marginBottom: 32,
-    },
-    iconCircle: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 16,
     },
     title: {
-        fontSize: 24,
-        fontWeight: '900',
-        marginBottom: 8,
+        color: '#FFFFFF',
+        fontSize: 20,
+        fontWeight: '800',
+        marginBottom: 12,
     },
-    statusText: {
-        fontSize: 16,
-        fontWeight: '600',
-        marginBottom: 24,
+    step: {
+        color: '#AAAAAA',
+        fontSize: 14,
+        marginBottom: 20,
+        textAlign: 'center',
     },
-    progressBackground: {
+    progressBg: {
         width: '100%',
         height: 8,
+        backgroundColor: '#333',
         borderRadius: 4,
         overflow: 'hidden',
     },
     progressFill: {
         height: '100%',
+        backgroundColor: '#10B981',
+        borderRadius: 4,
     },
-    adSection: {
-        width: '100%',
+    pct: {
+        color: '#10B981',
+        fontSize: 16,
+        fontWeight: '800',
+        marginTop: 8,
+    },
+    adPlaceholder: {
+        height: 50,
+        backgroundColor: '#2A2A2A',
         alignItems: 'center',
-    },
-    adLabel: {
-        fontSize: 11,
-        fontWeight: '700',
-        marginBottom: 12,
-        opacity: 0.7,
-    },
-    adContainer: {
-        width: '100%',
-        minHeight: 250, // Larger for PDF wait
-        borderRadius: 16,
         justifyContent: 'center',
-        alignItems: 'center',
-        overflow: 'hidden',
+        borderRadius: 8,
     },
+    adText: { color: '#555', fontSize: 12 },
 });

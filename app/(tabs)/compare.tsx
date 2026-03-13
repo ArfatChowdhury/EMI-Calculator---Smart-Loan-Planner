@@ -171,13 +171,12 @@ export default function CompareScreen() {
                         {renderComparisonCard('Monthly EMI', results.loan1.emi, results.loan2.emi)}
                         {renderComparisonCard('Total Interest', results.loan1.totalInterest, results.loan2.totalInterest)}
                         {renderComparisonCard('Total Payable', results.loan1.totalPayable, results.loan2.totalPayable)}
+                        <View style={{ marginTop: 16 }}>
+                            <BannerAdComponent isPremium={isPremium} />
+                        </View>
                     </Animated.View>
                 )}
             </ScrollView>
-
-            <View style={[styles.bottomAdContainer, { borderTopColor: theme.border }]}>
-                <BannerAdComponent isPremium={isPremium} />
-            </View>
         </SafeAreaView>
     );
 }

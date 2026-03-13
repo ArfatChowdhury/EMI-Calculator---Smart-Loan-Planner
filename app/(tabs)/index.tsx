@@ -541,6 +541,12 @@ export default function CalculatorScreen() {
                             </Animated.View>
                         )}
 
+                        {!isPremium && (
+                            <View style={{ marginVertical: 12 }}>
+                                <BannerAdComponent isPremium={isPremium} />
+                            </View>
+                        )}
+
                         <Animated.View
                             entering={FadeInDown.delay(400).duration(600)}
                             style={[styles.chartBox, { backgroundColor: theme.card, borderColor: theme.border }, SHADOW.sm]}
@@ -577,10 +583,6 @@ export default function CalculatorScreen() {
                 )}
 
             </ScrollView>
-
-            <View style={[styles.bottomAdContainer, { borderTopColor: theme.border }]}>
-                <BannerAdComponent isPremium={isPremium} />
-            </View>
 
             <SaveSuccessModal
                 visible={saveModalVisible}
@@ -704,14 +706,6 @@ const styles = StyleSheet.create({
         borderRadius: 24,
         padding: 20,
         borderWidth: 1,
-    },
-    bottomAdContainer: {
-        width: '100%',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#121212',
-        paddingVertical: 4,
-        borderTopWidth: 0.5,
     },
     divider: {
         height: 1,

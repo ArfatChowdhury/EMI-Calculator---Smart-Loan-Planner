@@ -41,14 +41,7 @@ export default function SaveSuccessModal({ visible, onClose }: SaveSuccessModalP
                         </Text>
                     </View>
 
-                    {!isPremium && (
-                        <View style={styles.adSection}>
-                            <Text style={[styles.adLabel, { color: theme.textSecondary }]}>Sponsored</Text>
-                            <View style={[styles.adContainer, { backgroundColor: theme.background }]}>
-                                <BannerAdComponent isPremium={isPremium} />
-                            </View>
-                        </View>
-                    )}
+                    <BannerAdComponent isPremium={isPremium} />
 
                     <TouchableOpacity
                         style={[styles.closeButton, { backgroundColor: theme.primary }]}

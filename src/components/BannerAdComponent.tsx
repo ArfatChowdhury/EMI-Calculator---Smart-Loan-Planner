@@ -1,45 +1,34 @@
 import { AdUnits } from '@/src/constants/adUnits';
-import React from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-interface BannerAdComponentProps {
+interface Props {
     isPremium?: boolean;
 }
 
-export default function BannerAdComponent({
-    isPremium = false
-}: BannerAdComponentProps) {
+export default function BannerAdComponent({ isPremium = false }: Props) {
+    const [adLoaded, setAdLoaded] = useState(false);
 
-    // Premium users — return nothing, no empty space
     if (isPremium) return null;
 
-    // Development mode — show placeholder
     if (__DEV__) {
         return (
             <View style={styles.placeholder}>
-                <Text style={styles.placeholderText}>[ Ad Placeholder ]</Text>
+                <Text style={styles.placeholderText}>[ Ad Banner ]</Text>
             </View>
         );
     }
 
-    // Production — show real AdMob banner
     try {
-        const {
-            BannerAd,
-            BannerAdSize,
-        } = require('react-native-google-mobile-ads');
-
+        const { BannerAd, BannerAdSize } = require('react-native-google-mobile-ads');
         return (
-            <View style={styles.bannerContainer}>
+            <View style={[styles.container, !adLoaded && styles.hidden]}>
                 <BannerAd
                     unitId={AdUnits.banner}
                     size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
-                    requestOptions={{
-                        requestNonPersonalizedAdsOnly: true,
-                    }}
-                    onAdFailedToLoad={(error: any) => {
-                        console.warn('Banner ad failed to load:', error);
-                    }}
+                    requestOptions={{ requestNonPersonalizedAdsOnly: true }}
+                    onAdLoaded={() => setAdLoaded(true)}
+                    onAdFailedToLoad={() => setAdLoaded(false)}
                 />
             </View>
         );
@@ -56,14 +45,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         width: '100%',
     },
-    placeholderText: {
-        color: '#555555',
-        fontSize: 12,
-    },
-    bannerContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '100%',
-        marginTop: 10,
-    }
+    placeholderText: { color: '#555', fontSize: 12 },
+    container: { alignItems: 'center', width: '100%' },
+    hidden: { height: 0, overflow: 'hidden' },
 });
