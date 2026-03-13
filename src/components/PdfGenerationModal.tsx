@@ -29,23 +29,12 @@ export default function PdfGenerationModal({ visible, onComplete }: Props) {
             return;
         }
 
-        // Show interstitial ad when PDF modal opens (non-premium only)
-        if (!isPremium && !__DEV__) {
-            try {
-                const { InterstitialAd, AdEventType } = require('react-native-google-mobile-ads');
-                const ad = InterstitialAd.createForAdRequest(AdUnits.interstitial, {
-                    requestNonPersonalizedAdsOnly: true,
-                });
-                ad.addAdEventListener(AdEventType.LOADED, () => ad.show());
-                ad.load();
-            } catch (e) {}
-        }
-
-        // Animate progress over 10 seconds
+        // Animate progress over 3 seconds for a smoother experience
         let elapsed = 0;
+        const totalDuration = 3000;
         const interval = setInterval(() => {
             elapsed += 100;
-            const pct = Math.min((elapsed / 10000) * 100, 100);
+            const pct = Math.min((elapsed / totalDuration) * 100, 100);
             setProgress(pct);
             setStep(Math.floor((pct / 100) * steps.length));
             if (pct >= 100) {

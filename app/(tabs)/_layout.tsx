@@ -55,7 +55,7 @@ export default function TabLayout() {
                     }}
                 />
             </Tabs>
-            <BannerAdComponent isPremium={isPremium} />
+            <BannerAdComponent isPremium={isPremium} useWrapper />
         </View>
     );
 }
