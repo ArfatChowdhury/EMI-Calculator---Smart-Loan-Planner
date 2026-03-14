@@ -38,8 +38,8 @@ export default function MyLoansScreen() {
     const { isPremium } = useSubscription();
 
     const listDataWithAds = (loans as Loan[]).flatMap((item, index) => {
-        // Show native ad after 2nd loan, then every 4 loans
-        if (index === 1 || (index > 1 && (index - 1) % 4 === 0)) {
+        // Show native ad after 1st loan, then every 3 loans for max revenue
+        if (index === 0 || (index > 0 && (index) % 3 === 0)) {
             return [item, { type: 'AD', id: `ad_${index}` }];
         }
         return [item];

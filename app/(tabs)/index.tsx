@@ -250,6 +250,7 @@ export default function CalculatorScreen() {
     const handleExportPDF = async () => {
         if (!results) return;
 
+        /*
         if (!isPremium && pdfExportsToday >= 3) {
             Alert.alert(
                 '🔥 Daily Limit Reached',
@@ -261,6 +262,7 @@ export default function CalculatorScreen() {
             );
             return;
         }
+        */
 
         // Show preloaded ad if available
         if (interstitialRef.current) {

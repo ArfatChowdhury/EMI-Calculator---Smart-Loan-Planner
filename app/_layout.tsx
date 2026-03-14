@@ -116,7 +116,8 @@ export default function RootLayout() {
       const { InterstitialAd, AdEventType } = require('react-native-google-mobile-ads');
       const { AdUnits } = require('@/src/constants/adUnits');
 
-      // Check if shown in last 24 hours
+      /* 
+      // Check if shown in last 24 hours (Commented out for max revenue)
       const lastShown = await AsyncStorage.getItem('last_interstitial');
       const now = Date.now();
       const twentyFourHours = 24 * 60 * 60 * 1000;
@@ -124,6 +125,7 @@ export default function RootLayout() {
       if (lastShown && now - parseInt(lastShown) < twentyFourHours) {
         return; // Already shown today, skip
       }
+      */
 
       const interstitial = InterstitialAd.createForAdRequest(
         AdUnits.interstitial,
