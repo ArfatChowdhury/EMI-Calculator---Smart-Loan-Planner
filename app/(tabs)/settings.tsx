@@ -186,7 +186,7 @@ export default function SettingsScreen() {
                     <View style={[styles.premiumCard, { backgroundColor: theme.primary, borderColor: theme.primary }, SHADOW.md]}>
                         <View style={styles.premiumHeader}>
                             <Text style={styles.premiumTitle}>✨ Lifetime Access</Text>
-                            <Text style={styles.premiumPrice}>One-Time Purchase 🎉</Text>
+                            <Text style={styles.premiumPrice}>One-Time Purchase — Pay Once, Own Forever 🎉</Text>
                         </View>
                         <Text style={styles.premiumPerks}>
                             ✅ Remove all ads forever{'\n'}
@@ -562,9 +562,6 @@ const styles = StyleSheet.create({
         borderWidth: 1,
     },
     premiumHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
         marginBottom: 16,
     },
     premiumTitle: {
@@ -573,9 +570,10 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
     },
     premiumPrice: {
-        fontSize: 16,
-        fontWeight: '800',
-        color: 'rgba(255,255,255,0.9)',
+        fontSize: 15,
+        fontWeight: '700',
+        color: 'rgba(255,255,255,0.8)',
+        marginTop: 4,
     },
     premiumPerks: {
         fontSize: 14,
