@@ -22,7 +22,7 @@
     },
     "android": {
       "package": "com.naim.emicalculator",
-      "versionCode": 3,
+      "versionCode": 4,
       "adaptiveIcon": {
         "backgroundColor": "#121212",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
