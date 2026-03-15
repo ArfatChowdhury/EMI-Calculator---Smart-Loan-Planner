@@ -157,6 +157,8 @@ export default function CompareScreen() {
                     </View>
                 </View>
 
+                <BannerAdComponent isPremium={isPremium} />
+
                 <TouchableOpacity
                     style={[styles.compareBtn, { backgroundColor: theme.primary }]}
                     onPress={handleCompare}

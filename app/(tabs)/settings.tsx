@@ -185,20 +185,20 @@ export default function SettingsScreen() {
                 {!isPremium ? (
                     <View style={[styles.premiumCard, { backgroundColor: theme.primary, borderColor: theme.primary }, SHADOW.md]}>
                         <View style={styles.premiumHeader}>
-                            <Text style={styles.premiumTitle}>✨ Go Premium</Text>
-                            <Text style={styles.premiumPrice}>$1.99 / month</Text>
+                            <Text style={styles.premiumTitle}>✨ Lifetime Access</Text>
+                            <Text style={styles.premiumPrice}>One-Time Purchase 🎉</Text>
                         </View>
                         <Text style={styles.premiumPerks}>
-                            ✅ Remove all annoying ads{'\n'}
+                            ✅ Remove all ads forever{'\n'}
                             ✅ Unlimited PDF exports{'\n'}
-                            ✅ Support the developer
+                            ✅ Lifetime access — pay once!
                         </Text>
                         <TouchableOpacity
                             style={[styles.premiumBtn, { backgroundColor: '#FFFFFF' }]}
                             onPress={handlePurchase}
                             activeOpacity={0.8}
                         >
-                            <Text style={[styles.premiumBtnText, { color: theme.primary }]}>Upgrade Now</Text>
+                            <Text style={[styles.premiumBtnText, { color: theme.primary }]}>Buy Lifetime Access</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={handleRestore} style={styles.restoreBtn}>
                             <Text style={styles.restoreText}>Restore Purchase</Text>
@@ -206,14 +206,14 @@ export default function SettingsScreen() {
                     </View>
                 ) : (
                     <View style={[styles.premiumCard, { backgroundColor: '#059669', borderColor: '#059669' }, SHADOW.sm]}>
-                        <Text style={styles.premiumTitle}>✨ Premium Active</Text>
-                        <Text style={styles.premiumActiveSub}>All ads removed. Enjoy the experience!</Text>
+                        <Text style={styles.premiumTitle}>✨ Lifetime Access Active</Text>
+                        <Text style={styles.premiumActiveSub}>All ads removed. Thank you for supporting us! 🙏</Text>
                         <TouchableOpacity
                             style={[styles.premiumBtn, { backgroundColor: 'rgba(255,255,255,0.2)', marginTop: 16 }]}
                             onPress={presentCustomerCenter}
                             activeOpacity={0.8}
                         >
-                            <Text style={[styles.premiumBtnText, { color: '#FFFFFF' }]}>Manage Subscription</Text>
+                            <Text style={[styles.premiumBtnText, { color: '#FFFFFF' }]}>Manage Purchase</Text>
                         </TouchableOpacity>
                     </View>
                 )}

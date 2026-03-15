@@ -253,11 +253,11 @@ export default function CalculatorScreen() {
         /*
         if (!isPremium && pdfExportsToday >= 3) {
             Alert.alert(
-                '🔥 Daily Limit Reached',
-                'You have reached your limit of 3 free PDF exports for today. Upgrade to PRO for unlimited exports and more!',
+                '🎉 Lifetime Benefits',
+                'Get unlimited PDF exports and remove all ads with a one-time lifetime purchase!',
                 [
                     { text: 'Not Now', style: 'cancel' },
-                    { text: 'Go PRO', onPress: purchasePremium }
+                    { text: 'Buy Lifetime', onPress: purchasePremium }
                 ]
             );
             return;
@@ -371,7 +371,7 @@ export default function CalculatorScreen() {
                     <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Smart Loan Planner</Text>
                 </View>
                 <View style={[styles.badge, { backgroundColor: `${theme.primary}20`, position: 'absolute', right: 20, top: 12 }]}>
-                    <Text style={[styles.badgeText, { color: theme.primary }]}>PRO</Text>
+                    <Text style={[styles.badgeText, { color: theme.primary }]}>LIFETIME</Text>
                 </View>
             </View>
 
