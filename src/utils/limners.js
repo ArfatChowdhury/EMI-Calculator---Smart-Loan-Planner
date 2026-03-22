@@ -154,7 +154,7 @@ const SVGatorComponent = React.forwardRef((props, ref) => {
     let html = getHtml();
     if (props.color) {
         html = html.replace(/fill="#fff"/gi, `fill="${props.color}"`);
-        html = html.replace('<svg ', `<svg fill="${props.color}" `);
+        html = html.replace('<svg id=', `<svg fill="${props.color}" id=`);
     }
     const { newProps, styles } = SVGatorPlayer.getWebViewProps(props, html);
     return (

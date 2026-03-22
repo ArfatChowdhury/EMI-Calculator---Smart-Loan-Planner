@@ -370,9 +370,15 @@ export default function CalculatorScreen() {
                     <Text style={[styles.title, { color: theme.textPrimary }]}>EMI Calculator</Text>
                     <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Smart Loan Planner</Text>
                 </View>
-                <View style={[styles.badge, { backgroundColor: `${theme.primary}20`, position: 'absolute', right: 20, top: 12 }]}>
-                    <Text style={[styles.badgeText, { color: theme.primary }]}>LIFETIME</Text>
-                </View>
+                {isPremium ? (
+                    <View style={[styles.badge, { backgroundColor: `${theme.primary}20`, position: 'absolute', right: 20, top: 12 }]}>
+                        <Text style={[styles.badgeText, { color: theme.primary }]}>LIFETIME</Text>
+                    </View>
+                ) : (
+                    <TouchableOpacity onPress={purchasePremium} style={[styles.badge, { backgroundColor: `${theme.primary}20`, position: 'absolute', right: 20, top: 12 }]}>
+                        <Text style={[styles.badgeText, { color: theme.primary }]}>GO PRO</Text>
+                    </TouchableOpacity>
+                )}
             </View>
 
             <ScrollView

@@ -7,7 +7,7 @@ import { useSettings } from '@/src/hooks/useSettings';
 import { useSubscription } from '@/src/hooks/useSubscription';
 import { formatCurrency } from '@/src/utils/currencyFormatter';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -37,15 +37,20 @@ export default function MyLoansScreen() {
     const router = useRouter();
     const { isPremium } = useSubscription();
 
-    const listDataWithAds = (loans as Loan[]).flatMap((item, index) => {
-        // Show native ad after 1st loan, then every 3 loans for max revenue
-        if (index === 0 || (index > 0 && (index) % 3 === 0)) {
-            return [item, { type: 'AD', id: `ad_${index}` }];
-        }
-        return [item];
-    });
+    const listDataWithAds = useMemo(() => {
+        return (loans as Loan[]).flatMap((item, index) => {
+            // Show native ad after 1st loan, then every 3 loans for max revenue
+            if (index === 0 || (index > 0 && (index) % 3 === 0)) {
+                return [item, { type: 'AD', id: `ad_${index}` }];
+            }
+            return [item];
+        });
+    }, [loans]);
 
-    const totalOutstanding = (loans as Loan[]).reduce((acc, loan) => acc + loan.principal, 0);
+    const totalOutstanding = useMemo(
+        () => (loans as Loan[]).reduce((acc, loan) => acc + loan.principal, 0),
+        [loans]
+    );
 
     const handleEdit = (loan: Loan) => {
         setActiveLoan(loan);
@@ -104,6 +109,7 @@ export default function MyLoansScreen() {
                     data={listDataWithAds}
                     keyExtractor={(item: any) => item.id}
                     ListHeaderComponent={loans.length > 0 ? renderHeader : null}
+                    ListEmptyComponent={renderEmptyState}
                     renderItem={({ item }: any) => {
                         if (item.type === 'AD') {
                             return (
@@ -127,7 +133,7 @@ export default function MyLoansScreen() {
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
                 />
-                {loans.length > 0 && <BannerAdComponent isPremium={isPremium} />}
+                <BannerAdComponent isPremium={isPremium} />
             </View>
         </SafeAreaView>
     );

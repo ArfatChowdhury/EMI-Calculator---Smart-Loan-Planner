@@ -23,18 +23,15 @@ function CustomSplashScreen({ onComplete }: { onComplete: () => void }) {
   useEffect(() => {
     async function sequence() {
       try {
-        // Phase 1: Show static icon for 800ms
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        // Transition to Phase 2: Fade in animation below icon
+        // Start fading in animation immediately
         Animated.timing(animFade, {
           toValue: 1,
           duration: 500,
           useNativeDriver: true,
         }).start(() => setPhase(1));
 
-        // Let the animation play for 2000ms
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Let the animation play for 2500ms
+        await new Promise(resolve => setTimeout(resolve, 2500));
         
         // Hide native splash screen if not already
         await SplashScreen.hideAsync();
@@ -74,7 +71,7 @@ function CustomSplashScreen({ onComplete }: { onComplete: () => void }) {
         justifyContent: 'center'
       }}>
         <Image
-          source={require('@/assets/images/icon.png')}
+          source={require('@/assets/images/iconfor.png')}
           style={{ width: 160, height: 160, borderRadius: 32 }}
         />
       </Animated.View>

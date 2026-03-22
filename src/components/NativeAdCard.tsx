@@ -27,7 +27,7 @@ export default function NativeAdCard({
 
     if (__DEV__) return <FallbackCard />;
 
-    // Production native ad fallback (using MEDIUM_RECTANGLE Banner)
+    // Production banner ad (Native Advanced not supported, use standard banner)
     try {
         const { BannerAd, BannerAdSize } = require('react-native-google-mobile-ads');
 
@@ -36,8 +36,8 @@ export default function NativeAdCard({
                 <Text style={styles.adLabel}>Advertisement</Text>
                 <View style={styles.bannerWrapper}>
                     <BannerAd
-                        unitId={AdUnits.banner} // Using banner ID as Native Advanced is not supported by this library
-                        size={BannerAdSize.MEDIUM_RECTANGLE}
+                        unitId={AdUnits.banner}
+                        size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
                         requestOptions={{
                             requestNonPersonalizedAdsOnly: true,
                         }}

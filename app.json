@@ -9,7 +9,7 @@
     "userInterfaceStyle": "dark",
     "updates": {
       "url": "https://u.expo.dev/emi",
-      "enabled": true,
+      "enabled": false,
       "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 0
     },
@@ -22,7 +22,7 @@
     },
     "android": {
       "package": "com.naim.emicalculator",
-      "versionCode": 4,
+      "versionCode": 5,
       "adaptiveIcon": {
         "backgroundColor": "#121212",
         "foregroundImage": "./assets/images/android-icon-foreground.png"
@@ -38,7 +38,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/icon.png",
+          "image": "./assets/images/iconfor.png",
           "imageWidth": 160,
           "resizeMode": "contain",
           "backgroundColor": "#0F172A",
@@ -51,10 +51,7 @@
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-3315420037530922~1974149229",
-          "iosAppId": "ca-app-pub-3940256099942544~1458002511",
-          "testDeviceIdentifiers": [
-            "6e1beb1f-f162-4d2f-9dc2-78e6d8af6f28"
-          ]
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
         }
       ],
       "expo-font",
