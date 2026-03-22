@@ -25,6 +25,7 @@ class SVGatorPlayer {
                             height: 100%;
                             overflow: hidden;
                             width: 100%;
+                            background-color: transparent !important;
                         }
                         body {
                             margin: 0;
@@ -150,15 +151,23 @@ class SVGatorPlayer {
 }
 
 const SVGatorComponent = React.forwardRef((props, ref) => {
-    const html = getHtml();
+    let html = getHtml();
+    if (props.color) {
+        html = html.replace(/fill="#fff"/gi, `fill="${props.color}"`);
+        html = html.replace('<svg ', `<svg fill="${props.color}" `);
+    }
     const { newProps, styles } = SVGatorPlayer.getWebViewProps(props, html);
     return (
         <WebView
             ref={ref}
             {...newProps}
             source={{ html }}
-            containerStyle={styles.container}
-            style={styles.style}
+            containerStyle={[styles.container, { backgroundColor: 'transparent' }]}
+            style={[styles.style, { backgroundColor: 'transparent' }]}
+            opaque={false}
+            nestedScrollEnabled={false}
+            showsVerticalScrollIndicator={false}
+            showsHorizontalScrollIndicator={false}
         />
     );
 });

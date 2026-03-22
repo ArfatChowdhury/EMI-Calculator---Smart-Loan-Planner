@@ -17,31 +17,24 @@ SplashScreen.preventAutoHideAsync();
 function CustomSplashScreen({ onComplete }: { onComplete: () => void }) {
   const [phase, setPhase] = useState(0); // 0: Icon, 1: Animation
   const iconFade = useRef(new Animated.Value(1)).current;
-  const animFade = useRef(new Animated.Value(0)).current;
+  const animFade = useRef(new Animated.Value(0.01)).current;
   const containerFade = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     async function sequence() {
       try {
-        // Phase 1: Show static icon for 1.5 seconds
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Phase 1: Show static icon for 800ms
+        await new Promise(resolve => setTimeout(resolve, 800));
         
-        // Transition to Phase 2: Fade out icon, fade in animation
-        Animated.parallel([
-          Animated.timing(iconFade, {
-            toValue: 0,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(animFade, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-        ]).start(() => setPhase(1));
+        // Transition to Phase 2: Fade in animation below icon
+        Animated.timing(animFade, {
+          toValue: 1,
+          duration: 500,
+          useNativeDriver: true,
+        }).start(() => setPhase(1));
 
-        // Let the animation play for 3.5 seconds (total 5.8s splash)
-        await new Promise(resolve => setTimeout(resolve, 3500));
+        // Let the animation play for 2000ms
+        await new Promise(resolve => setTimeout(resolve, 2000));
         
         // Hide native splash screen if not already
         await SplashScreen.hideAsync();
@@ -88,12 +81,15 @@ function CustomSplashScreen({ onComplete }: { onComplete: () => void }) {
 
       {/* Phase 1: Animation */}
       <Animated.View style={{ 
+        position: 'absolute',
+        top: '50%',
+        marginTop: 90,
         opacity: animFade,
         width: '100%',
         alignItems: 'center',
         justifyContent: 'center'
       }}>
-        <CompanyLogo width={280} height={100} />
+        <CompanyLogo width={240} height={70} variant="white" />
       </Animated.View>
     </Animated.View>
   );
