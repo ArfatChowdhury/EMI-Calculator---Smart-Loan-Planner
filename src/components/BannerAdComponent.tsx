@@ -3,6 +3,7 @@ import { Colors } from '@/constants/Colors';
 import { useSettings } from '@/src/hooks/useSettings';
 import React, { useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Props {
     isPremium?: boolean;
@@ -14,11 +15,22 @@ export default function BannerAdComponent({ isPremium = false, useWrapper = fals
     const { settings } = useSettings();
     const theme = Colors[(settings.theme || 'light') as keyof typeof Colors];
 
+    const insets = useSafeAreaInsets();
+    
     if (isPremium) return null;
 
     if (__DEV__) {
         return (
-            <View style={styles.placeholder}>
+            <View style={[
+                styles.placeholder,
+                useWrapper && {
+                    backgroundColor: theme.card,
+                    borderTopWidth: 0.5,
+                    borderTopColor: theme.border,
+                    paddingBottom: Math.max(insets.bottom, 10),
+                    paddingTop: 10,
+                }
+            ]}>
                 <Text style={styles.placeholderText}>[ Ad Banner ]</Text>
             </View>
         );
@@ -32,7 +44,7 @@ export default function BannerAdComponent({ isPremium = false, useWrapper = fals
                     backgroundColor: theme.card,
                     borderTopWidth: 0.5,
                     borderTopColor: theme.border,
-                    paddingBottom: Platform.OS === 'ios' ? 25 : 10,
+                    paddingBottom: Math.max(insets.bottom, 10),
                     paddingTop: 10,
                 },
                 !adLoaded && styles.hidden

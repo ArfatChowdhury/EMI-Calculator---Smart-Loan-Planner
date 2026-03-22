@@ -15,48 +15,86 @@ import 'react-native-reanimated';
 SplashScreen.preventAutoHideAsync();
 
 function CustomSplashScreen({ onComplete }: { onComplete: () => void }) {
-  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const [phase, setPhase] = useState(0); // 0: Icon, 1: Animation
+  const iconFade = useRef(new Animated.Value(1)).current;
+  const animFade = useRef(new Animated.Value(0)).current;
+  const containerFade = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    async function prepare() {
+    async function sequence() {
       try {
-        // Minimum time to show your beautiful logo
-        await new Promise(resolve => setTimeout(resolve, 2000));
-      } catch (e) {
-        console.warn(e);
-      } finally {
+        // Phase 1: Show static icon for 1.5 seconds
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Transition to Phase 2: Fade out icon, fade in animation
+        Animated.parallel([
+          Animated.timing(iconFade, {
+            toValue: 0,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(animFade, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ]).start(() => setPhase(1));
+
+        // Let the animation play for 3.5 seconds (total 5.8s splash)
+        await new Promise(resolve => setTimeout(resolve, 3500));
+        
+        // Hide native splash screen if not already
         await SplashScreen.hideAsync();
 
-        Animated.timing(fadeAnim, {
+        // Final transition: Fade out the whole custom splash
+        Animated.timing(containerFade, {
           toValue: 0,
-          duration: 500,
+          duration: 600,
           useNativeDriver: true,
         }).start(() => {
           onComplete();
         });
+      } catch (e) {
+        console.warn('Splash sequence error:', e);
+        onComplete();
       }
     }
-    prepare();
-  }, [fadeAnim, onComplete]);
+    sequence();
+  }, [iconFade, animFade, containerFade, onComplete]);
 
   return (
     <Animated.View style={[
       StyleSheet.absoluteFill,
       {
-        backgroundColor: '#121212',
+        backgroundColor: '#0F172A', // Deep dark background for premium feel
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 999,
-        opacity: fadeAnim
+        zIndex: 9991, // Ensure it's above everything
+        opacity: containerFade
       }
     ]}>
-      <Image
-        source={require('@/assets/images/splashicon.png')}
-        style={{ width: 140, height: 140, resizeMode: 'contain' }}
-      />
-      <View style={{ marginTop: 20 }}>
-        <CompanyLogo variant="white" width={220} height={70} />
-      </View>
+      {/* Phase 0: Icon */}
+      <Animated.View style={{ 
+        position: 'absolute',
+        opacity: iconFade,
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <Image
+          source={require('@/assets/images/icon.png')}
+          style={{ width: 160, height: 160, borderRadius: 32 }}
+        />
+      </Animated.View>
+
+      {/* Phase 1: Animation */}
+      <Animated.View style={{ 
+        opacity: animFade,
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <CompanyLogo width={280} height={100} />
+      </Animated.View>
     </Animated.View>
   );
 }
@@ -218,17 +256,21 @@ export default function RootLayout() {
       <LoanProvider>
         <View style={{ flex: 1, backgroundColor: '#121212' }}>
           <OTAUpdateHandler />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              animation: 'fade',
-            }}
-          >
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          </Stack>
-          <StatusBar style="light" />
-
-          {!appReady && <CustomSplashScreen onComplete={() => setAppReady(true)} />}
+          {appReady ? (
+            <>
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  animation: 'fade',
+                }}
+              >
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              </Stack>
+              <StatusBar style="light" />
+            </>
+          ) : (
+            <CustomSplashScreen onComplete={() => setAppReady(true)} />
+          )}
 
           <RateUsModal
             visible={rateModalVisible}

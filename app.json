@@ -38,12 +38,12 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splashicon.png",
-          "imageWidth": 140,
+          "image": "./assets/images/icon.png",
+          "imageWidth": 160,
           "resizeMode": "contain",
-          "backgroundColor": "#161920",
+          "backgroundColor": "#0F172A",
           "dark": {
-            "backgroundColor": "#161920"
+            "backgroundColor": "#0F172A"
           }
         }
       ],
@@ -67,7 +67,9 @@
             "newArchEnabled": false,
             "abiFilters": [
               "arm64-v8a",
-              "x86_64"
+              "armeabi-v7a",
+              "x86_64",
+              "x86"
             ],
             "packagingOptions": {
               "pickFirst": [
