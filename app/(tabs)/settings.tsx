@@ -6,6 +6,7 @@ import { useLoanContext } from '@/src/context/LoanContext';
 import { useSettings } from '@/src/hooks/useSettings';
 import { useSubscription } from '@/src/hooks/useSubscription';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import React, { useState } from 'react';
 import {
     Alert,
@@ -221,7 +222,7 @@ export default function SettingsScreen() {
                 <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Support & Legal</Text>
                 <View style={[styles.settingsCard, { backgroundColor: theme.card, borderColor: theme.border }, SHADOW.sm]}>
                     {renderItem('chatbubble-ellipses-outline', 'Send Feedback', '', () => setFeedbackModalVisible(true))}
-                    {renderItem('information-circle-outline', 'Version', '1.0.0', () => { })}
+                    {renderItem('information-circle-outline', 'Version', Constants.expoConfig?.version ?? '1.0.0', () => { })}
                     {renderItem('shield-checkmark-outline', 'Privacy Policy', '', handleOpenPrivacy)}
                     {renderItem('document-text-outline', 'Terms of Service', '', handleOpenTerms, true)}
                 </View>
@@ -241,7 +242,7 @@ export default function SettingsScreen() {
                         width={300}
                         height={100}
                     />
-                    <Text style={[styles.footerVersion, { color: theme.textSecondary }]}>Version 1.0.0</Text>
+                    <Text style={[styles.footerVersion, { color: theme.textSecondary }]}>Version {Constants.expoConfig?.version ?? '1.0.0'}</Text>
                 </View>
             </ScrollView>
 
