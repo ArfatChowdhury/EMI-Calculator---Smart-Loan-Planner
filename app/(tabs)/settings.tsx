@@ -222,6 +222,7 @@ export default function SettingsScreen() {
                 <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Support & Legal</Text>
                 <View style={[styles.settingsCard, { backgroundColor: theme.card, borderColor: theme.border }, SHADOW.sm]}>
                     {renderItem('chatbubble-ellipses-outline', 'Send Feedback', '', () => setFeedbackModalVisible(true))}
+                    {renderItem('code-working-outline', 'Developer', 'Naim uddin arafat', () => { })}
                     {renderItem('information-circle-outline', 'Version', Constants.expoConfig?.version ?? '1.0.0', () => { })}
                     {renderItem('shield-checkmark-outline', 'Privacy Policy', '', handleOpenPrivacy)}
                     {renderItem('document-text-outline', 'Terms of Service', '', handleOpenTerms, true)}
