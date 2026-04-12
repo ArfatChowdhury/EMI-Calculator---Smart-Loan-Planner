@@ -6,6 +6,18 @@
 
 ---
 
+## 📸 Screenshots
+
+<p align="center">
+  <img src="./assets/Screenshots/home.jpeg" width="19%" />
+  <img src="./assets/Screenshots/compare.jpeg" width="19%" />
+  <img src="./assets/Screenshots/my%20loan.jpeg" width="19%" />
+  <img src="./assets/Screenshots/setting.jpeg" width="19%" />
+  <img src="./assets/Screenshots/faluty.jpeg" width="19%" />
+</p>
+
+---
+
 ## 🌟 Key Features
 
 - **🎯 Precision Calculator**: Calculate EMI for both **Reducing Balance** and **Flat Rate** loan types.
