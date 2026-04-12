@@ -45,5 +45,7 @@ app-example
 #keystore
 *.keystore
 *.txt
+*.log
+.*log
 
 ./my-release-key.keystore
