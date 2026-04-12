@@ -13,7 +13,6 @@
   <img src="./assets/Screenshots/compare.jpeg" width="19%" />
   <img src="./assets/Screenshots/my%20loan.jpeg" width="19%" />
   <img src="./assets/Screenshots/setting.jpeg" width="19%" />
-  <img src="./assets/Screenshots/faluty.jpeg" width="19%" />
 </p>
 
 ---
