@@ -1,5 +1,7 @@
 # 💰 EMI - Smart Loan Planner
 
+**📲 Download Now on Google Play:** [EMI Calculator](https://play.google.com/store/apps/details?id=com.naim.emicalculator&pcampaignid=web_share)
+
 **EMI - Smart Loan Planner** is a premium, feature-rich React Native application designed to help users calculate, analyze, and manage their loans with ease. Built with **Expo SDK 54**, it offers a sleek dark-themed interface, real-time visualization, and advanced financial tools.
 
 ---
